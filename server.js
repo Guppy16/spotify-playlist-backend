@@ -2,10 +2,12 @@ const express = require('express');
 const request = require('request');
 const querystring = require('querystring');
 
-const parseurl = require('parseurl');
-const bodyParser = require('body-parser');
-const path = require('path');
-const expressValidator = require('express-validator');
+// const parseurl = require('parseurl');
+// const bodyParser = require('body-parser');
+// const path = require('path');
+// const expressValidator = require('express-validator');
+
+// NOTE: Need to SET SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET before running
 
 const app = express();
 
@@ -77,25 +79,40 @@ app.get('/refresh_token', function(req, res) {
 
 
 // API FUNCTIONS
-// GET data from API (using spotify implementation)
-app.get('/api/playlist', (req, res) => {
-  accessToken = req.body.access_token
 
-  // Get collabroative playlist data
-  request.get({
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URI || 'http://localhost:3000'); 
+  res.header("Access-Control-Allow-Headers", "Content-Type, Accept");
+  next();
+});
+
+// GET data from API (using spotify implementation)
+app.get('/api/playlist', (req, res, next) => {
+  // Get access toekn using query string
+  // Refresh token? Somehwere else
+  const accessToken = req.query.access_token;
+  if (accessToken){
+    // Get collabroative playlist data
+    request.get({
       url: 'https://api.spotify.com/v1/playlists/7JJzP95ARTN2A08g7xahXD',
       headers: { 'Authorization': 'Bearer ' + accessToken },
       json: true
     }, 
     (error, response, body) => {
-      console.log(body);
+      // console.log(body);
       res.json(body);
       }
-  );
+    );
+  }else{
+    res.redirect('/#' +
+      querystring.stringify({
+        error: 'invalid_token'
+      }));
+  }
 });
 
 // POST order of playlist
-app.post('api/playlist', (req, res) => {
+app.post('api/playlist', (req, res, next) => {
   // Update table
 
 });
