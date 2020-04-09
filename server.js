@@ -8,6 +8,25 @@ const bodyParser = require('body-parser');
 // const expressValidator = require('express-validator');
 
 // NOTE: Need to SET SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET before running
+// NOTE: Need to setup: SET DATABASE_URL=postgres://$(whoami)
+// OR SET URL using: SET DATABASE_URL=$(heroku config:get DATABASE_URL -a your-app)
+
+
+const { Pool } = require('pg');
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: true
+});
+
+pool.connect();
+
+pool.query('SELECT table_schema,table_name FROM information_schema.tables;', (err, res) => {
+  if (err) throw err;
+  for (let row of res.rows) {
+    console.log(JSON.stringify(row));
+  }
+  client.end();
+});
 
 const app = express();
 
@@ -77,6 +96,19 @@ app.get('/refresh_token', function(req, res) {
   });
 });
 
+// Database function
+app.get('/db', async (req, res) => {
+  try {
+    const client = await pool.connect()
+    const result = await client.query('SELECT * FROM test_table');
+    const results = { 'results': (result) ? result.rows : null};
+    res.render('pages/db', results );
+    client.release();
+  } catch (err) {
+    console.error(err);
+    res.send("Error " + err);
+  }
+})
 
 // API FUNCTIONS
 

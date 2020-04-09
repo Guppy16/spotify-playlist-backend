@@ -1,0 +1,12 @@
+id, SongId, SongName, dateAdded, userIDAdded, total
+(may need id in case song gets added as duplicate)
+
+userId, userName
+
+id, songId, userID, rating
+
+
+
+
+
+

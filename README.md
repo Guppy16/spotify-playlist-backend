@@ -1,3 +1,18 @@
+# Server to allow client access to spotify
+
+# Helpful commands
+May need this command to pull remote DB:
+
+PGUSER=postgres PGPASSWORD=password heroku pg:pull HEROKU_POSTGRESQL_MAGENTA mylocaldb --app sushi
+
+or this:
+
+heroku pg:pull HEROKU_POSTGRESQL_MAGENTA mylocaldb --app sushi \
+
+To push local DB to remote:
+
+heroku pg:push mylocaldb HEROKU_POSTGRESQL_MAGENTA --app sushi
+
 # OAuth bridge template
 
 This service logs in to Spotify and redirects the user to a given frontend application with a valid access_token as a parameter in the url.
