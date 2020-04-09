@@ -1,12 +1,19 @@
-let express = require('express')
-let request = require('request')
-let querystring = require('querystring')
+const express = require('express');
+const request = require('request');
+const querystring = require('querystring');
 
-let app = express()
+const parseurl = require('parseurl');
+const bodyParser = require('body-parser');
+const path = require('path');
+const expressValidator = require('express-validator');
 
-let redirect_uri = 
-  process.env.REDIRECT_URI || 
-  'http://localhost:8888/callback'
+const app = express();
+
+const redirect_uri = process.env.REDIRECT_URI || 'http://localhost:8888/callback'
+
+app.get('/', (req, res) => {
+  res.json('You are in here!');
+});
 
 app.get('/login', function(req, res) {
   res.redirect('https://accounts.spotify.com/authorize?' +
@@ -19,8 +26,10 @@ app.get('/login', function(req, res) {
 })
 
 app.get('/callback', function(req, res) {
-  let code = req.query.code || null
-  let authOptions = {
+  const code = req.query.code || null
+  
+
+  const authOptions = {
     url: 'https://accounts.spotify.com/api/token',
     form: {
       code: code,
@@ -35,8 +44,9 @@ app.get('/callback', function(req, res) {
     json: true
   }
   request.post(authOptions, function(error, response, body) {
-    var access_token = body.access_token
-    let uri = process.env.FRONTEND_URI || 'http://localhost:3000'
+    const access_token = body.access_token;
+    // const refresh_token = body.refresh_token;
+    const uri = process.env.FRONTEND_URI || 'http://localhost:3000'
     res.redirect(uri + '?access_token=' + access_token)
   })
 })
@@ -44,8 +54,8 @@ app.get('/callback', function(req, res) {
 app.get('/refresh_token', function(req, res) {
 
   // requesting access token from refresh token
-  var refresh_token = req.query.refresh_token;
-  var authOptions = {
+  const refresh_token = req.query.refresh_token;
+  const authOptions = {
     url: 'https://accounts.spotify.com/api/token',
     headers: { 'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64')) },
     form: {
@@ -57,13 +67,39 @@ app.get('/refresh_token', function(req, res) {
 
   request.post(authOptions, function(error, response, body) {
     if (!error && response.statusCode === 200) {
-      var access_token = body.access_token;
+      const access_token = body.access_token;
       res.send({
         'access_token': access_token
       });
     }
   });
 });
+
+
+// API FUNCTIONS
+// GET data from API (using spotify implementation)
+app.get('/api/playlist', (req, res) => {
+  accessToken = req.body.access_token
+
+  // Get collabroative playlist data
+  request.get({
+      url: 'https://api.spotify.com/v1/playlists/7JJzP95ARTN2A08g7xahXD',
+      headers: { 'Authorization': 'Bearer ' + accessToken },
+      json: true
+    }, 
+    (error, response, body) => {
+      console.log(body);
+      res.json(body);
+      }
+  );
+});
+
+// POST order of playlist
+app.post('api/playlist', (req, res) => {
+  // Update table
+
+});
+
 
 let port = process.env.PORT || 8888
 console.log(`Listening on port ${port}. Go /login to initiate authentication flow.`)
