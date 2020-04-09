@@ -1,9 +1,9 @@
 const express = require('express');
 const request = require('request');
 const querystring = require('querystring');
+const bodyParser = require('body-parser');
 
 // const parseurl = require('parseurl');
-// const bodyParser = require('body-parser');
 // const path = require('path');
 // const expressValidator = require('express-validator');
 
@@ -85,6 +85,7 @@ app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Headers", "Content-Type, Accept");
   next();
 });
+app.use(bodyParser.urlencoded({ extended: true}));
 
 // GET data from API (using spotify implementation)
 app.get('/api/playlist', (req, res, next) => {
@@ -112,9 +113,9 @@ app.get('/api/playlist', (req, res, next) => {
 });
 
 // POST order of playlist
-app.post('api/playlist', (req, res, next) => {
+app.post('/api/playlist', (req, res, next) => {
   // Update table
-
+  console.log(req.body);
 });
 
 
