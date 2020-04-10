@@ -76,16 +76,17 @@ app.get('/callback', function(req, res) {
         json: true
       }, 
       async (error, response, body) => {
-        const spotifyID = body.id;
-        const username = body.display_name;
         try {
-          const client = await pool.connect()
+          const spotifyID = body.id;
+          const username = body.display_name;
+          console.log(spotifyID);
+          const client = await pool.connect();
     
           // Search for spotifyID in table
-          const result = await client.query('SELECT COUNT(1) FROM users WHERE userspotifyid LIKE ' + spotifyID);
+          const result = await client.query(`SELECT COUNT(1) FROM users WHERE userspotifyid LIKE ${spotifyID}`);
+          console.log(spotifyID);
           // Add person to table if necessary
           if (!result){await client.query(`INSERT INTO users VALUES (${spotifyID}, ${username})`);}
-          res.json(result);
           client.release();
         } catch (err) {
           console.error(err);
@@ -93,10 +94,6 @@ app.get('/callback', function(req, res) {
         }
       }
     );
-
-    
-   
-
 
     const uri = process.env.FRONTEND_URI || 'http://localhost:3000'
     res.redirect(uri + '?access_token=' + access_token)
