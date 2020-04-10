@@ -83,9 +83,6 @@ app.get('/callback', function(req, res) {
 
           // Search for spotifyID in table
           const result = await client.query(`SELECT COUNT(1) FROM users WHERE userspotifyid LIKE '${spotifyID}'`);
-          console.log(result);
-          console.log(result.rows[0].count);
-          console.log(parseInt(result.rows[0].count) === 0);
           // Add person to table if necessary
           if (!parseInt(result.rows[0].count)){await client.query(`INSERT INTO users VALUES ('${spotifyID}', '${username}')`);}
           client.release();
@@ -125,7 +122,7 @@ app.get('/refresh_token', function(req, res) {
   });
 });
 
-// Database function
+// Database model function
 app.get('/db', async (req, res) => {
   try {
     const client = await pool.connect()
@@ -138,6 +135,59 @@ app.get('/db', async (req, res) => {
     console.error(err);
     res.send("Error " + err);
   }
+})
+
+// Database to retreive songs
+app.get('/db/songs', async (req, res) => {
+  
+  // Get access token to get playlist details
+  const accessToken = req.query.access_token;
+  if (accessToken){
+    // Get collabroative playlist data
+    request.get({
+      url: 'https://api.spotify.com/v1/playlists/7JJzP95ARTN2A08g7xahXD',
+      headers: { 'Authorization': 'Bearer ' + accessToken },
+      json: true
+    }, 
+    (error, response, body) => {
+      // console.log(body);
+      const songs = body.tracks.items.map( item => ({
+        id: item.track.id,
+        name: item.track.name,
+        timestamp: item.added_at,
+        user: item.added_by.id,
+        duration: Math.round(item.track.duration_ms / 1000),
+      }));
+
+      //res.json(body);
+      try {
+        const client = await pool.connect()
+        // Add songs to database
+        await client.query('DELETE * FROM songs');
+        songs.forEach( song => {
+          await client.query(`INSERT INTO songs VALUES ('${song.id}','${song.name}','${song.timestamp}','${song.user}','${song.duration}')`)
+        })
+        const result = await client.query('SELECT * FROM songs');
+        const results = { 'results': (result) ? result.rows : null};
+        console.log(results);
+        res.json(results);
+        client.release();
+      } catch (err) {
+        console.error(err);
+        res.send("Error " + err);
+      }
+      
+      }
+    );
+  }else{
+    res.redirect('/#' +
+      querystring.stringify({
+        error: 'invalid_token'
+      }));
+  }
+
+
+  
 })
 
 // API FUNCTIONS
@@ -175,9 +225,27 @@ app.get('/api/playlist', (req, res, next) => {
 });
 
 // POST order of playlist
-app.post('/api/playlist', (req, res, next) => {
-  // Update table
+app.post('/api/playlist', async (req, res, next) => {
   console.log(req.body);
+  // Update table
+  try {
+    const client = await pool.connect()
+
+    // Assume score already added (through get method when getting playlist)
+    // for now search for all songs scored after 10/4 by user:
+    const result = await client.query('SELECT * FROM song_user_score');
+
+    // THEN UPDATE records
+
+    //const result = await client.query('SELECT * FROM test_table');
+    const results = { 'results': (result) ? result.rows : null};
+    console.log(results);
+    res.json(results);
+    client.release();
+  } catch (err) {
+    console.error(err);
+    res.send("Error " + err);
+  }
   res.json(req.body);
 });
 

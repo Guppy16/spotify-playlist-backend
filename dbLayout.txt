@@ -1,9 +1,9 @@
-id, SongId, SongName, dateAdded, userIDAdded, (total)
-(may need id in case song gets added as duplicate)
+songs: (id), songid, songname, timestamp, addedbyuserid (total)
+(may need id in case song gets added as duplicate?)
 
-userId, userName, spotifyID, (points)
+users: userspotifyid, username, (points)
 
-id, songId, userID, rating
+song_user_score: songId, userID, score(time)
 
 
 
