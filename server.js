@@ -75,7 +75,7 @@ app.get('/callback', function(req, res) {
         headers: { 'Authorization': 'Bearer ' + access_token },
         json: true
       }, 
-      (error, response, body) => {
+      async (error, response, body) => {
         const spotifyID = body.id;
         const username = body.display_name;
         try {
