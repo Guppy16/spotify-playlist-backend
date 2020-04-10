@@ -1,7 +1,7 @@
-id, SongId, SongName, dateAdded, userIDAdded, total
+id, SongId, SongName, dateAdded, userIDAdded, (total)
 (may need id in case song gets added as duplicate)
 
-userId, userName
+userId, userName, spotifyID, (points)
 
 id, songId, userID, rating
 

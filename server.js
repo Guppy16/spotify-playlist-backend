@@ -67,6 +67,33 @@ app.get('/callback', function(req, res) {
   request.post(authOptions, function(error, response, body) {
     const access_token = body.access_token;
     // const refresh_token = body.refresh_token;
+
+    // Get user data
+    const spotifyID, username = request.get(
+      {
+        url: 'https://api.spotify.com/v1/me',
+        headers: { 'Authorization': 'Bearer ' + access_token },
+        json: true
+      }, 
+      (error, response, body) => {body.id, body.display_name}
+    );
+
+    // Add new person to DB when logged in
+    try {
+      const client = await pool.connect()
+
+      // Search for spotifyID in table
+      const result = await client.query('SELECT COUNT(1) FROM users WHERE userspotifyid LIKE ' + spotifyID);
+      // Add person to table if necessary
+      if (!result){await client.query(`INSERT INTO users VALUES (${spotifyID}, ${username})`);}
+      res.json(result);
+      client.release();
+    } catch (err) {
+      console.error(err);
+      res.send("Error " + err);
+    }
+
+
     const uri = process.env.FRONTEND_URI || 'http://localhost:3000'
     res.redirect(uri + '?access_token=' + access_token)
   })
@@ -149,6 +176,7 @@ app.get('/api/playlist', (req, res, next) => {
 app.post('/api/playlist', (req, res, next) => {
   // Update table
   console.log(req.body);
+  res.json(req.body);
 });
 
 
