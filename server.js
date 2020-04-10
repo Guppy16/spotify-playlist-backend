@@ -83,8 +83,8 @@ app.get('/callback', function(req, res) {
 
           // Search for spotifyID in table
           const result = await client.query(`SELECT COUNT(1) FROM users WHERE userspotifyid LIKE '${spotifyID}'`);
-          console.log(result.rows);
-          console.log(result.rows[count]);
+          console.log(result.rows[0]);
+          console.log(result.rows[0].count);
           console.log(result.rows.count);
           //console.log('\nmy RESULT.ROWS: ' + result.rows);
           // Add person to table if necessary
