@@ -164,8 +164,8 @@ app.get('/db/songs', async (req, res) => {
         const client = await pool.connect()
         // Add songs to database
         await client.query('DELETE * FROM songs');
-        songs.forEach( song => {
-          client.query(`INSERT INTO songs VALUES ('${song.id}','${song.name}','${song.timestamp}','${song.user}','${song.duration}')`)
+        songs.forEach( async (song) => { // May need async with await
+          await client.query(`INSERT INTO songs VALUES ('${song.id}','${song.name}','${song.timestamp}','${song.user}','${song.duration}')`)
         })
         const result = await client.query('SELECT * FROM songs');
         const results = { 'results': (result) ? result.rows : null};
