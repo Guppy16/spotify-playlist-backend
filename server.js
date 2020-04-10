@@ -83,10 +83,11 @@ app.get('/callback', function(req, res) {
 
           // Search for spotifyID in table
           const result = await client.query(`SELECT COUNT(1) FROM users WHERE userspotifyid LIKE '${spotifyID}'`);
+          console.log(result);
           console.log(result.rows[0].count);
-          console.log(result.rows[0].count === 0);
+          console.log(parseInt(result.rows[0].count) === 0);
           // Add person to table if necessary
-          if (result.rows[0].count === 0){await client.query(`INSERT INTO users VALUES ('${spotifyID}', '${username}')`);}
+          if (!parseInt(result.rows[0].count)){await client.query(`INSERT INTO users VALUES ('${spotifyID}', '${username}')`);}
           client.release();
         } catch (err) {
           console.error(err);
