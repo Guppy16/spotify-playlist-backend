@@ -82,8 +82,11 @@ app.get('/callback', function(req, res) {
           console.log(spotifyID);
           const client = await pool.connect();
     
+          const result0 = await client.query('SELECT * FROM test_table');
+          console.log(result0);
+
           // Search for spotifyID in table
-          const result = await client.query(`SELECT COUNT(1) FROM users WHERE userspotifyid LIKE ${spotifyID}`);
+          const result = await client.query(`SELECT COUNT(1) FROM users WHERE userspotifyid LIKE ${spotifyID};`);
           console.log(spotifyID);
           // Add person to table if necessary
           if (!result){await client.query(`INSERT INTO users VALUES (${spotifyID}, ${username})`);}
