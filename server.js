@@ -213,27 +213,28 @@ app.get('/api/playlist', async (req, res, next) => {
 
     // Query all songs with userid in song_user_score
     const userSongIds = await client.query(`SELECT songid FROM song_user_score WHERE userid LIKE '${userid}'`);
-    console.log('\nUser songs\n');
+    console.log('\nUSER SONG IDS\n');
     console.log(userSongIds);
 
-    console.log('\nUser songs.rows\n');
+    console.log('\nUSER SONG IDS.ROWS\n');
     console.log(userSongIds.rows);
 
     // Query all songid in songs
     const allSongIds = await client.query(`SELECT songid FROM songs`);
-    console.log('\nAll songs\n');
+    console.log('\nALL SONGS\n');
     console.log(allSongIds);
 
-    console.log('\nallSongIds.rows:\n');
+    console.log('\nALL SONG IDS.ROWS:\n');
     console.log(allSongIds.rows)
 
     // Add missing songs in score 
-    allSongIds.rows.forEach( async (songid) => {
-      if(!userSongIds.rows.includes(songid)){
-        await client.query(`INSERT INTO song_user_score VALUES ('${songid}', '${userid}', '0', '${new Date().toISOString()}')`);
+    allSongIds.rows.forEach( async (song) => {
+      if(!userSongIds.rows.includes(song.songid)){
+        await client.query(`INSERT INTO song_user_score VALUES ('${song.songid}', '${userid}', '0', '${new Date().toISOString()}')`);
       }
     })
 
+    // Use join query to get song_id, duration, score
     // Requery songs in song_user_score
     const userSongScore = await client.query(`SELECT * FROM song_user_score WHERE userid LIKE '${userid}'`);
 
@@ -244,8 +245,8 @@ app.get('/api/playlist', async (req, res, next) => {
   } catch (err) {
     console.error(err);
     //res.send("Error " + err);
-
-    // If didn't work, get data from spotify api
+  } finally {
+      // If didn't work, get data from spotify api
     // Get access token using query string
     const accessToken = req.query.access_token;
     if (accessToken){
