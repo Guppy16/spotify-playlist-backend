@@ -212,7 +212,7 @@ app.get('/api/playlist', async (req, res, next) => {
     const client = await pool.connect()
 
     // Query all songs with userid in song_user_score
-    const userSongIds = await client.query(`SELECT songid FROM song_user_score WHERE userid LIKE ${userid}`);
+    const userSongIds = await client.query(`SELECT songid FROM song_user_score WHERE userid LIKE '${userid}'`);
     console.log('\nUser songs\n');
     console.log(userSongScore);
     // Query all songid in songs
@@ -231,7 +231,7 @@ app.get('/api/playlist', async (req, res, next) => {
     })
 
     // Requery songs in song_user_score
-    const userSongScore = await client.query(`SELECT * FROM song_user_score`);
+    const userSongScore = await client.query(`SELECT * FROM song_user_score WHERE userid LIKE '${userid}'`);
 
     const results = { 'results': (userSongScore) ? userSongScore.rows : null};
     console.log(results);
