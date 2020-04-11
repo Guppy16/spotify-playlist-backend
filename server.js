@@ -214,7 +214,11 @@ app.get('/api/playlist', async (req, res, next) => {
     // Query all songs with userid in song_user_score
     const userSongIds = await client.query(`SELECT songid FROM song_user_score WHERE userid LIKE '${userid}'`);
     console.log('\nUser songs\n');
-    console.log(userSongScore);
+    console.log(userSongIds);
+
+    console.log('\nUser songs.rows\n');
+    console.log(userSongIds.rows);
+
     // Query all songid in songs
     const allSongIds = await client.query(`SELECT songid FROM songs`);
     console.log('\nAll songs\n');
