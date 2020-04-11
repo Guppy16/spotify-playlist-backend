@@ -49,7 +49,6 @@ app.get('/login', function(req, res) {
 app.get('/callback', function(req, res) {
   const code = req.query.code || null
   
-
   const authOptions = {
     url: 'https://accounts.spotify.com/api/token',
     form: {
@@ -88,10 +87,10 @@ app.get('/callback', function(req, res) {
           client.release();
         } catch (err) {
           console.error(err);
-          res.send("Error " + err);
+          // res.send("ERROR! " + err); // not working? maybe add this as json?
         }
       }
-    );
+    )
 
     const uri = process.env.FRONTEND_URI || 'http://localhost:3000'
     res.redirect(uri + '?access_token=' + access_token)
@@ -190,8 +189,11 @@ app.get('/db/songs', async (req, res) => {
   
 })
 
+// UTIL functions
+
 // API FUNCTIONS
 
+// USE functions to attach to headers
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URI || 'http://localhost:3000'); 
   res.header("Access-Control-Allow-Headers", "Content-Type, Accept");
@@ -200,28 +202,61 @@ app.use(function(req, res, next) {
 app.use(bodyParser.urlencoded({ extended: true}));
 
 // GET data from API (using spotify implementation)
-app.get('/api/playlist', (req, res, next) => {
-  // Get access toekn using query string
-  // Refresh token? Somehwere else
-  const accessToken = req.query.access_token;
-  if (accessToken){
-    // Get collabroative playlist data
-    request.get({
-      url: 'https://api.spotify.com/v1/playlists/7JJzP95ARTN2A08g7xahXD',
-      headers: { 'Authorization': 'Bearer ' + accessToken },
-      json: true
-    }, 
-    (error, response, body) => {
-      // console.log(body);
-      res.json(body);
+app.get('/api/playlist', async (req, res, next) => {
+
+  console.log('Getting data from playlist api');
+
+  // NOTE: may need to query based on timestamp LATER
+  try {
+    const userid = req.query.user_id; // Get userid from body
+    const client = await pool.connect()
+
+    // Query all songs with userid in song_user_score
+    const userSongIds = await client.query(`SELECT songid FROM song_user_score WHERE userid LIKE ${userid}`);
+    // Query all songid in songs
+    const allSongIds = await client.query(`SELECT songid FROM songs`);
+
+    // Add missing songs in score 
+    allSongIds.rows.forEach( async (songid) => {
+      if(!userSongIds.rows.includes(songid)){
+        await client.query(`INSERT INTO song_user_score VALUES ('${songid}', '${userid}', '0', '${new Date().toISOString()}')`);
       }
-    );
-  }else{
-    res.redirect('/#' +
-      querystring.stringify({
-        error: 'invalid_token'
-      }));
+    })
+
+    // Requery songs in song_user_score
+    const userSongScore = await client.query(`SELECT * FROM song_user_score`);
+
+    const results = { 'results': (userSongScore) ? userSongScore.rows : null};
+    console.log(results);
+    res.json(results);
+    client.release();
+  } catch (err) {
+    console.error(err);
+    //res.send("Error " + err);
+
+    // If didn't work, get data from spotify api
+    // Get access token using query string
+    const accessToken = req.query.access_token;
+    if (accessToken){
+      // Get collabroative playlist data
+      request.get({
+        url: 'https://api.spotify.com/v1/playlists/7JJzP95ARTN2A08g7xahXD',
+        headers: { 'Authorization': 'Bearer ' + accessToken },
+        json: true
+      }, 
+      (error, response, body) => {
+        // console.log(body);
+        res.json(body);
+        }
+      );
+    }else{
+      res.redirect('/#' +
+        querystring.stringify({
+          error: 'invalid_token and invalid user_id'
+        }));
+    }
   }
+  
 });
 
 // POST order of playlist
