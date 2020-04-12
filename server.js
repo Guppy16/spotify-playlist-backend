@@ -283,7 +283,7 @@ app.get('/api/playlist', async (req, res, next) => {
         // Return playlist using spotify API instead of DB
 
         // console.log(body);
-        const playlsit = {
+        const playlist = {
           name: body.name,
           imgUrl: body.images[0].url,
           songs: body.tracks.items.map(item => ({
