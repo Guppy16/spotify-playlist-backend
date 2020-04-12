@@ -214,7 +214,7 @@ app.get('/api/playlist', async (req, res, next) => {
 
   console.log('Getting data from api/playlist');
   
-  // Get playlist using spotify API
+  // Get playlist meta data using spotify API, but song data from DB
   const accessToken = req.query.access_token;
   if (accessToken){
     // Get collabroative playlist data
@@ -223,7 +223,7 @@ app.get('/api/playlist', async (req, res, next) => {
       headers: { 'Authorization': 'Bearer ' + accessToken },
       json: true
     }, 
-    (error, response, body) => {
+    async (error, response, body) => {
 
       // NOTE: may need to query based on timestamp (LATER)
       // Get playlist details from DB or API
@@ -292,7 +292,7 @@ app.get('/api/playlist', async (req, res, next) => {
             duration: item.track.duration_ms,
         }))};
 
-      res.json(body);
+      res.json(playlist);
       }
     })
   }else{
