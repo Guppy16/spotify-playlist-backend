@@ -330,7 +330,7 @@ app.post('/api/playlist', async (req, res, next) => {
 // GET order of songs based on top 10
 app.get('/api/result', async (req, res, next) =>{
   console.log("\nGETTING topsongs\n");
-  const maxSongs = 10;
+  const maxSongScore = 10;
   try {
     const client = await pool.connect();
     const songRecords = await client.query(`SELECT songid, songname, addedbyuserid FROM songs`);
@@ -341,22 +341,14 @@ app.get('/api/result', async (req, res, next) =>{
     // console.log(songRecords);
     // console.log(userScoreRecords);
     // console.log(users);
-    // let songScores = [];
-    // let userScores = [];
-
-    // userScoreRecords.rows.forEach ( userScoreRecord => {
-    //   if (userScoreRecord.score < maxScore) {
-
-    //   }
-    // })
 
     // Create an array of songs and score
     let songScores = []
     songRecords.rows.forEach( (songRecord) => {
       let songScore = 0;
       userScoreRecords.rows.forEach( scoreRecord => {
-        if (scoreRecord.songid === songRecord.songid && scoreRecord.score < maxSongs){
-          songScore += scoreRecord.score;
+        if (scoreRecord.songid === songRecord.songid && scoreRecord.score < maxSongScore){
+          songScore = 10 - scoreRecord.score;
         }
       });
       // console.log(songScore);
@@ -373,7 +365,7 @@ app.get('/api/result', async (req, res, next) =>{
       })
       userScores.push( { name: user.username, score: userScore} );
     });
-    
+
     res.json({songScores: songScores, userScores: userScores});
     res.sendStatus(200);
 
