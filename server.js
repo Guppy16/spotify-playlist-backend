@@ -226,9 +226,10 @@ app.get('/api/playlist', async (req, res, next) => {
     (error, response, body) => {
 
       // NOTE: may need to query based on timestamp (LATER)
+      // Get playlist details from DB or API
       try {
-        const userid = req.query.user_id; // Get userid from body
         const client = await pool.connect()
+        const userid = req.query.user_id; // Get userid from body
 
         // Query all songs with userid in song_user_score
         const userSongIds = await client.query(`SELECT songid FROM song_user_score WHERE userid LIKE '${userid}'`);
