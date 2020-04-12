@@ -235,20 +235,16 @@ app.get('/api/playlist', async (req, res, next) => {
         console.log(userid)
 
         // Query all songs with userid in song_user_score
-        const userSongIds = await client.query(`SELECT songid FROM song_user_score WHERE userid LIKE '${userid}'`);
-
-        console.log('\nUSER SONG IDS.ROWS\n');
-        console.log(userSongIds.rows);
-
+        let userSongIds = await client.query(`SELECT songid FROM song_user_score WHERE userid LIKE '${userid}'`);
+        userSongIds = userSongIds.rows.map( record => record.songid);
+        console.log("AFTER mapping usersongids");
+        console.log(userSongIds);
         // Query all songid in songs
         const allSongIds = await client.query(`SELECT songid FROM songs`);
 
-        console.log('\nALL SONG IDS.ROWS:\n');
-        console.log(allSongIds.rows)
-
         // Add missing songs in song_user_score table
         allSongIds.rows.forEach( async (song) => {
-          if(!userSongIds.rows.includes(song.songid)){
+          if(!userSongIds.includes(song)){
             await client.query(`INSERT INTO song_user_score VALUES ('${song.songid}', '${userid}', '0', '${new Date().toISOString()}', '${new Date().toISOString()}')`);
           }
         })
@@ -263,7 +259,7 @@ app.get('/api/playlist', async (req, res, next) => {
           name: body.name,
           imgUrl: body.images[0].url,
           songs: userSongsScores.rows.map( row => {
-            console.log(row.duration)
+            //console.log(row.duration)
             return {
               id: row.songid,
               name: row.songname,
