@@ -338,29 +338,31 @@ app.get('/api/result', async (req, res, next) =>{
 
     
     // Create an array of songs and score
-    const songScores = songRecords.rows.forEach( (songRecord) => {
+    let songScores = []
+    songRecords.rows.forEach( (songRecord) => {
       let songScore = 0;
-      console.log(songRecord);
       userScoreRecords.rows.forEach( scoreRecord => {
         if (scoreRecord.songid === songRecord.songid && scoreRecord.score < maxSongs){
           songScore += scoreRecord.score;
         }
       });
-      return {...songRecord, score: songScore};
+      // console.log(songScore);
+      songScores.push({...songRecord, score: songScore});
     })
 
-    console.log("songScores" + songScores);
+    console.log("songScores " + songScores);
 
     const users = await client.query(`SELECT * FROM users`);
 
     // Create an array of users and scores
-    const userScores = users.rows.forEach( user => {
+    let userScores = [];
+    users.rows.forEach( user => {
       if (!songScores.rows.map( rec => rec.addedbyuserid).includes(user.userspotifyid)){return null};
       let userScore = 0;
       songScores.forEach( songScoreRecord => {
         userScore += songScoreRecord.addedbyuserid === user.userspotifyid ? songScoreRecord.score : 0;
       })
-      return { name: user.username, score: userScore};
+      userScores.push( { name: user.username, score: userScore} );
     });
 
     client.release();
