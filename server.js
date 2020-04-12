@@ -324,11 +324,12 @@ app.post('/api/playlist', async (req, res, next) => {
       );
     })
     client.release();
+    res.sendStatus(200)
   } catch (err) {
     console.error(err);
     res.send("Error " + err);
   }
-  res.json(req.body);
+  res.status(500).send(req.body);
 });
 
 
