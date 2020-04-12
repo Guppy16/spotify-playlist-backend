@@ -92,7 +92,7 @@ app.get('/callback', function(req, res) {
           client.release();
         
           res.redirect(uri + '?access_token=' + access_token + '&user_id=' + userSpotifyID + '&username=' + username);
-
+          res.sendStatus(200);
         } catch (err) {
           console.error(err);
           // res.send("ERROR! " + err); // not working? maybe add this as json?
