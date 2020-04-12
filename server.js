@@ -328,14 +328,19 @@ app.post('/api/playlist', async (req, res, next) => {
 });
 
 // GET order of songs based on top 10
-app.get('/api/result', async (req, res, next) =>{
+
+async function getResultsRecords() {
+  
+}
+
+app.get('/api/result', (req, res, next) =>{
   console.log("\nGETTING topsongs\n");
   const maxSongs = 10;
   try {
-    const client = await pool.connect();
-    const songRecords = await client.query(`SELECT songid, songname, addedbyuserid FROM songs`);
-    const userScoreRecords = await client.query(`SELECT songid, score FROM song_user_score`);
-    const users = await client.query(`SELECT * FROM users`);
+    const client = pool.connect();
+    const songRecords = client.query(`SELECT songid, songname, addedbyuserid FROM songs`);
+    const userScoreRecords = client.query(`SELECT songid, score FROM song_user_score`);
+    const users = client.query(`SELECT * FROM users`);
     client.release();
 
     // console.log(songRecords);
@@ -343,7 +348,7 @@ app.get('/api/result', async (req, res, next) =>{
     // console.log(users);
 
     // Create an array of songs and score
-    let songScores = songRecords.rows.forEach( (songRecord) => {
+    const songScores = songRecords.rows.forEach( (songRecord) => {
       let songScore = 0;
       userScoreRecords.rows.forEach( scoreRecord => {
         if (scoreRecord.songid === songRecord.songid && scoreRecord.score < maxSongs){
@@ -356,7 +361,7 @@ app.get('/api/result', async (req, res, next) =>{
     console.log(songScores);
 
     // Create an array of users and scores
-    let userScores = users.rows.forEach( user => {
+    const userScores = users.rows.forEach( user => {
       if (!songScores.rows.map( rec => rec.addedbyuserid).includes(user.userspotifyid)){return null};
       let userScore = 0;
       songScores.forEach( songScoreRecord => {
