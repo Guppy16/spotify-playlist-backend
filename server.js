@@ -254,7 +254,7 @@ app.get('/api/playlist', async (req, res, next) => {
 
         // Use join query to get songid, songname, duration, score
         const userSongsScores = await client.query(
-          `SELECT songs.songid, songs.songname, songs.duration, song_user_score.score FROM songs INNER JOIN song_user_score ON songs.songid=song_user_score.songid`
+          `SELECT songs.songid, songs.songname, songs.duration, song_user_score.score FROM songs INNER JOIN song_user_score ON songs.songid=song_user_score.songid AND song_user_score.userid='${userid}'`
         );
 
         // Add songs to playlist as json
