@@ -345,12 +345,12 @@ async function getResultsRecords() {
   }
 }
 
-app.get('/api/result', (req, res, next) =>{
+app.get('/api/result', async (req, res, next) =>{
   console.log("\nGETTING topsongs\n");
   const maxSongs = 10;
   try {
 
-    const query = getResultsRecords()
+    const query = await getResultsRecords()
     .then( response =>
       {
         if (query === null){
@@ -360,9 +360,9 @@ app.get('/api/result', (req, res, next) =>{
         const userScoreRecords = query.userScoreRecords;
         const users = query.users;
     
-        // console.log(songRecords);
-        // console.log(userScoreRecords);
-        // console.log(users);
+        console.log(songRecords);
+        console.log(userScoreRecords);
+        console.log(users);
     
         // Create an array of songs and score
         const songScores = songRecords.rows.forEach( (songRecord) => {
