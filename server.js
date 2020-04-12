@@ -67,7 +67,7 @@ app.get('/callback', function(req, res) {
     const access_token = body.access_token;
     // const refresh_token = body.refresh_token;
 
-    // Add new person to DB when logged in
+    // Get user ID
     request.get(
       {
         url: 'https://api.spotify.com/v1/me',
@@ -75,20 +75,26 @@ app.get('/callback', function(req, res) {
         json: true
       }, 
       async (error, response, body) => {
+        const userSpotifyID = body.id;
+        const username = body.display_name;
+        console.log("\tUserID: " + userSpotifyID + "\tusername: " + username);
+        res.json(userSpotifyID);
+
+        // Add user to DB
+        if (userSpotifyID){ // Check if userid found
         try {
-          const spotifyID = body.id;
-          const username = body.display_name;
           const client = await pool.connect();
 
           // Search for spotifyID in table
-          const result = await client.query(`SELECT COUNT(1) FROM users WHERE userspotifyid LIKE '${spotifyID}'`);
+          const result = await client.query(`SELECT COUNT(1) FROM users WHERE userspotifyid LIKE '${userSpotifyID}'`);
           // Add person to table if necessary
-          if (!parseInt(result.rows[0].count)){await client.query(`INSERT INTO users VALUES ('${spotifyID}', '${username}')`);}
+          if (!parseInt(result.rows[0].count)){await client.query(`INSERT INTO users VALUES ('${userSpotifyID}', '${username}')`);}
           client.release();
+
         } catch (err) {
           console.error(err);
           // res.send("ERROR! " + err); // not working? maybe add this as json?
-        }
+        }}
       }
     )
 
@@ -204,70 +210,94 @@ app.use(bodyParser.urlencoded({ extended: true}));
 // GET data from API (using spotify implementation)
 app.get('/api/playlist', async (req, res, next) => {
 
-  console.log('Getting data from playlist api');
+  console.log('Getting data from api/playlist');
+  
+  // Get playlist using spotify API
+  const accessToken = req.query.access_token;
+  if (accessToken){
+    // Get collabroative playlist data
+    request.get({
+      url: 'https://api.spotify.com/v1/playlists/7JJzP95ARTN2A08g7xahXD',
+      headers: { 'Authorization': 'Bearer ' + accessToken },
+      json: true
+    }, 
+    (error, response, body) => {
 
-  // NOTE: may need to query based on timestamp LATER
-  try {
-    const userid = req.query.user_id; // Get userid from body
-    const client = await pool.connect()
+      // NOTE: may need to query based on timestamp (LATER)
+      try {
+        const userid = req.query.user_id; // Get userid from body
+        const client = await pool.connect()
 
-    // Query all songs with userid in song_user_score
-    const userSongIds = await client.query(`SELECT songid FROM song_user_score WHERE userid LIKE '${userid}'`);
-    console.log('\nUSER SONG IDS\n');
-    console.log(userSongIds);
+        // Query all songs with userid in song_user_score
+        const userSongIds = await client.query(`SELECT songid FROM song_user_score WHERE userid LIKE '${userid}'`);
+        console.log('\nUSER SONG IDS\n');
+        console.log(userSongIds);
 
-    console.log('\nUSER SONG IDS.ROWS\n');
-    console.log(userSongIds.rows);
+        console.log('\nUSER SONG IDS.ROWS\n');
+        console.log(userSongIds.rows);
 
-    // Query all songid in songs
-    const allSongIds = await client.query(`SELECT songid FROM songs`);
-    console.log('\nALL SONGS\n');
-    console.log(allSongIds);
+        // Query all songid in songs
+        const allSongIds = await client.query(`SELECT songid FROM songs`);
+        console.log('\nALL SONGS\n');
+        console.log(allSongIds);
 
-    console.log('\nALL SONG IDS.ROWS:\n');
-    console.log(allSongIds.rows)
+        console.log('\nALL SONG IDS.ROWS:\n');
+        console.log(allSongIds.rows)
 
-    // Add missing songs in score 
-    allSongIds.rows.forEach( async (song) => {
-      if(!userSongIds.rows.includes(song.songid)){
-        await client.query(`INSERT INTO song_user_score VALUES ('${song.songid}', '${userid}', '0', '${new Date().toISOString()}')`);
+        // Add missing songs in song_user_score table
+        allSongIds.rows.forEach( async (song) => {
+          if(!userSongIds.rows.includes(song.songid)){
+            await client.query(`INSERT INTO song_user_score VALUES ('${song.songid}', '${userid}', '0', '${new Date().toISOString()}')`);
+          }
+        })
+
+        // Use join query to get songid, songname, duration, score
+        const userSongsScores = await client.query(
+          `SELECT songs.songid, songs.songname, songs.duration, song_user_score.score FROM songs INNER JOIN song_user_score ON songs.songid=song_user_score.songid`
+        );
+
+        // Add songs to playlist as json
+        const playlist = {
+          name: body.name,
+          imgUrl: body.images[0].url,
+          songs: userSongsScores.rows.map( row => {
+            return {
+              id: row.songid,
+              name: row.songname,
+              duration: row.duration, // dunno what format
+              score: row.score
+            }
+          })
+        }
+        console.log("PLAYLIST after inner join");
+        console.log(playlist);
+
+        res.json(playlist);
+        client.release();
+      } catch (err) {
+        console.error(err);
+
+        // Return playlist using spotify API instead of DB
+
+        // console.log(body);
+        const playlsit = {
+          name: body.name,
+          imgUrl: body.images[0].url,
+          songs: body.tracks.items.map(item => ({
+            id: item.track.id,
+            name: item.track.name,
+            duration: item.track.duration_ms,
+        }))};
+
+      res.json(body);
       }
     })
-
-    // Use join query to get song_id, duration, score
-    // Requery songs in song_user_score
-    const userSongScore = await client.query(`SELECT * FROM song_user_score WHERE userid LIKE '${userid}'`);
-
-    const results = { 'results': (userSongScore) ? userSongScore.rows : null};
-    console.log(results);
-    res.json(results);
-    client.release();
-  } catch (err) {
-    console.error(err);
-    //res.send("Error " + err);
-  } finally {
-      // If didn't work, get data from spotify api
-    // Get access token using query string
-    const accessToken = req.query.access_token;
-    if (accessToken){
-      // Get collabroative playlist data
-      request.get({
-        url: 'https://api.spotify.com/v1/playlists/7JJzP95ARTN2A08g7xahXD',
-        headers: { 'Authorization': 'Bearer ' + accessToken },
-        json: true
-      }, 
-      (error, response, body) => {
-        // console.log(body);
-        res.json(body);
-        }
-      );
-    }else{
-      res.redirect('/#' +
-        querystring.stringify({
-          error: 'invalid_token and invalid user_id'
-        }));
+  }else{
+    res.redirect('/#' +
+      querystring.stringify({
+        error: 'invalid_token and invalid user_id'
+      }));
     }
-  }
   
 });
 
