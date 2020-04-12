@@ -78,13 +78,14 @@ app.get('/callback', function(req, res) {
       async (error, response, body) => {
         const userSpotifyID = body.id;
         const username = body.display_name;
-        console.log("\tUserID: " + userSpotifyID + "\tusername: " + username);
+        console.log("\nUSERID: " + userSpotifyID + "\tUSERNAME: " + username);
 
         // Add user to DB
         if (userSpotifyID){ // Check if userid found
         try {
           console.log("Checking if user is in DB");
           const client = await pool.connect();
+          console.log("CONNECTED to the client");
 
           // Search for spotifyID in table
           const result = await client.query(`SELECT COUNT(1) FROM users WHERE userspotifyid LIKE '${userSpotifyID}'`);
@@ -93,7 +94,7 @@ app.get('/callback', function(req, res) {
           client.release();
         
           res.redirect(uri + '?access_token=' + access_token + '&user_id=' + userSpotifyID + '&username=' + username);
-          res.sendStatus(200);
+          //res.sendStatus(200);
           console.log("wtaf");
         } catch (err) {
           console.error(err);
@@ -303,7 +304,7 @@ app.get('/api/playlist', async (req, res, next) => {
 
 // POST order of playlist
 app.post('/api/playlist', async (req, res, next) => {
-  //console.log(req.body);
+  console.log("POST playlist method");
   // Update table
   const userid = req.body.id;
   try {
@@ -312,11 +313,11 @@ app.post('/api/playlist', async (req, res, next) => {
     // Assume score already added (through get method when getting playlist)
     // for now search for all songs scored after 10/4 by user
     // UPDATE records
-    req.body.songs.forEach( async (item, index) => {
+    await req.body.songs.forEach( (item, index) => {
       const songid = item.id;
       //const score = item.score;
-      await client.query(
-        `UPDATE song_user_score SET score='${index}', scoretimestamp='${new Date().toISOString()}', WHERE songid='${songid}' AND userid='${userid}'`
+      client.query(
+        `UPDATE song_user_score SET score='${index}', scoretimestamp='${new Date().toISOString()}' WHERE songid='${songid}' AND userid='${userid}'`
       );
     })
     client.release();
