@@ -286,10 +286,11 @@ app.get('/api/playlist', async (req, res, next) => {
         const playlist = {
           name: body.name,
           imgUrl: body.images[0].url,
-          songs: body.tracks.items.map(item => ({
+          songs: body.tracks.items.map( (item, index) => ({
             id: item.track.id,
             name: item.track.name,
             duration: item.track.duration_ms,
+            score: index,
         }))};
 
       res.json(playlist);
