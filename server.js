@@ -247,7 +247,7 @@ app.get('/api/playlist', async (req, res, next) => {
 
         // Add missing songs in song_user_score table
         allSongIds.rows.forEach( async (song, index) => {
-          if(!userSongIds.includes(song)){
+          if(!userSongIds.includes(song.songid)){
             await client.query(`INSERT INTO song_user_score VALUES ('${song.songid}', '${userid}', '${index}', '${new Date().toISOString()}', '${new Date().toISOString()}')`);
           }
         })
