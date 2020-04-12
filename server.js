@@ -328,57 +328,29 @@ app.post('/api/playlist', async (req, res, next) => {
 });
 
 // GET order of songs based on top 10
-
-async function getResultsRecords() {
-  try {
-    const client = await pool.connect();
-    const result = {
-      songRecords: await client.query(`SELECT songid, songname, addedbyuserid FROM songs`),
-      userScoreRecords: await client.query(`SELECT songid, score FROM song_user_score`),
-      users: await client.query(`SELECT * FROM users`)
-    };
-    client.release();
-    return result;
-  } catch (err) {
-    console.error(err);
-    return null;
-  }
-}
-
-async function getSongScores(songRecords, userScoreRecords) {
-  const maxSongs = 10;
-  return songRecords.rows.forEach( (songRecord) => {
-    let songScore = 0;
-    userScoreRecords.rows.forEach( scoreRecord => {
-      if (scoreRecord.songid === songRecord.songid && scoreRecord.score < maxSongs){
-        songScore += scoreRecord.score;
-      }
-    });
-    return {...songRecord, score: songScore};
-  })
-}
-
 app.get('/api/result', async (req, res, next) =>{
   console.log("\nGETTING topsongs\n");
   const maxSongs = 10;
   try {
+    const client = await pool.connect();
+    const songRecords = await client.query(`SELECT songid, songname, addedbyuserid FROM songs`);
+    const userScoreRecords = await client.query(`SELECT songid, score FROM song_user_score`);
 
-    const query = await getResultsRecords();
-    if (query === null){
-      res.status(500).send(err);
-    }
-    const songRecords = query.songRecords;
-    const userScoreRecords = query.userScoreRecords;
-    const users = query.users;
-
-    // console.log(songRecords);
-    // console.log(userScoreRecords);
-    // console.log(users);
-
+    
     // Create an array of songs and score
-    const songScores = await getSongScores(songRecords, userScoreRecords);
+    const songScores = songRecords.rows.forEach( (songRecord) => {
+      let songScore = 0;
+      userScoreRecords.rows.forEach( scoreRecord => {
+        if (scoreRecord.songid === songRecord.songid && scoreRecord.score < maxSongs){
+          songScore += scoreRecord.score;
+        }
+      });
+      return {...songRecord, score: songScore};
+    })
 
     console.log(songScores);
+
+    const users = await client.query(`SELECT * FROM users`);
 
     // Create an array of users and scores
     const userScores = users.rows.forEach( user => {
@@ -390,10 +362,22 @@ app.get('/api/result', async (req, res, next) =>{
       return { name: user.username, score: userScore};
     });
 
-    console.log(userScores);
+    client.release();
 
-    const result = {songScores: songScores, userScores: userScores};
-    res.json(result);
+    // console.log(songRecords);
+    // console.log(userScoreRecords);
+    // console.log(users);
+    // let songScores = [];
+    // let userScores = [];
+
+    // userScoreRecords.rows.forEach ( userScoreRecord => {
+    //   if (userScoreRecord.score < maxScore) {
+
+    //   }
+    // })
+
+    console.log(userScores);
+    res.json({songScores: songScores, userScores: userScores});
     res.sendStatus(200);
   } catch (err) {
     console.error(err);
