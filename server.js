@@ -85,8 +85,6 @@ app.get('/callback', function(req, res) {
         try {
           console.log("Checking if user is in DB");
           const client = await pool.connect();
-          console.log("CONNECTED to the client");
-
           // Search for spotifyID in table
           const result = await client.query(`SELECT COUNT(1) FROM users WHERE userspotifyid LIKE '${userSpotifyID}'`);
           // Add person to table if necessary
@@ -102,7 +100,7 @@ app.get('/callback', function(req, res) {
           //const uri = process.env.FRONTEND_URI || 'http://localhost:3000'
           res.redirect(uri + '?access_token=' + access_token);
         }}else{
-          console.log("ERROR spotify id not found");
+          console.log("ERROR spotify id not found. probs cos invalid access token?");
           res.redirect(uri + '?access_token=' + access_token);
         }
       }
@@ -235,13 +233,11 @@ app.get('/api/playlist', async (req, res, next) => {
       try {
         const client = await pool.connect()
         const userid = req.query.user_id; // Get userid from url
-        console.log(userid)
 
         // Query all songs with userid in song_user_score
         let userSongIds = await client.query(`SELECT songid FROM song_user_score WHERE userid LIKE '${userid}'`);
         userSongIds = userSongIds.rows.map( record => record.songid);
-        console.log("AFTER mapping usersongids");
-        console.log(userSongIds);
+
         // Query all songid in songs
         const allSongIds = await client.query(`SELECT songid FROM songs`);
 
@@ -271,8 +267,8 @@ app.get('/api/playlist', async (req, res, next) => {
             }
           })
         }
-        console.log("PLAYLIST after inner join");
-        console.log(playlist);
+        // console.log("PLAYLIST after inner join");
+        // console.log(playlist);
 
         res.json(playlist);
         client.release();
@@ -331,6 +327,54 @@ app.post('/api/playlist', async (req, res, next) => {
   // res.status(500).send(req.body);
 });
 
+// GET order of songs based on top 10
+app.get('/api/result', async (req, res, next) =>{
+  console.log("\nGETTING topsongs\n");
+  const maxSongs = 10;
+  try {
+    const client = await pool.connect();
+    const songRecords = await client.query(`SELECT songid, songname, addedbyuserid FROM songs`);
+    const userScoreRecords = await client.query(`SELECT songid, score FROM song_user_score`);
+    const users = await client.query(`SELECT * FROM users`);
+    client.release();
+
+    console.log(songRecords);
+    console.log(userScoreRecords);
+    console.log(users);
+
+    // Create an array of songs and score
+    let songScores = songRecords.rows.forEach( (songRecord) => {
+      let songScore = 0;
+      userScoreRecords.rows.forEach( scoreRecord => {
+        if (scoreRecord.songid === songRecord.songid && scoreRecord.score < maxSongs){
+          songScore += scoreRecord.score;
+        }
+      });
+      return {...songRecord, score: songScore};
+    })
+
+    console.log(songScores);
+
+    // Create an array of users and scores
+    let userScores = users.rows.forEach( user => {
+      if (!songScore.rows.map( rec => rec.addedbyuserid).includes(user.userspotifyid)){return null};
+      let userScore = 0;
+      songScore.forEach( songScoreRecord => {
+        userScore += songScoreRecord.addedbyuserid === user.userspotifyid ? songScoreRecord.score : 0;
+      })
+      return { name: user.username, score: userScore};
+    });
+
+    console.log(userScores);
+
+    const result = {songScores: songScores, userScores: userScores};
+    res.json(result);
+    res.sendStatus(200);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error: " + err);
+  }
+})
 
 let port = process.env.PORT || 8888
 console.log(`Listening on port ${port}. Go /login to initiate authentication flow.`)
