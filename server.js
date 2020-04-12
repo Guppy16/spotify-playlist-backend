@@ -250,7 +250,7 @@ app.get('/api/playlist', async (req, res, next) => {
         // Add missing songs in song_user_score table
         allSongIds.rows.forEach( async (song) => {
           if(!userSongIds.rows.includes(song.songid)){
-            await client.query(`INSERT INTO song_user_score VALUES ('${song.songid}', '${userid}', '0', '${new Date().toISOString()}')`);
+            await client.query(`INSERT INTO song_user_score VALUES ('${song.songid}', '${userid}', '0', '${new Date().toISOString()}', '${new Date().toISOString()}')`);
           }
         })
 
@@ -309,19 +309,20 @@ app.get('/api/playlist', async (req, res, next) => {
 app.post('/api/playlist', async (req, res, next) => {
   console.log(req.body);
   // Update table
+  const userid = req.body.id;
   try {
     const client = await pool.connect()
 
     // Assume score already added (through get method when getting playlist)
-    // for now search for all songs scored after 10/4 by user:
-    const result = await client.query('SELECT * FROM song_user_score');
-
-    // THEN UPDATE records
-
-    //const result = await client.query('SELECT * FROM test_table');
-    const results = { 'results': (result) ? result.rows : null};
-    console.log(results);
-    res.json(results);
+    // for now search for all songs scored after 10/4 by user
+    // UPDATE records
+    req.body.songs.forEach( item => {
+      const songid = item.id;
+      const score = item.score;
+      client.query(
+        `UPDATE song_user_score SET score='${score}', scoretimestamp='${new Date().toISOString()}', WHERE songid='${songid}' AND userid='${userid}'`
+      );
+    })
     client.release();
   } catch (err) {
     console.error(err);
