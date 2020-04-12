@@ -375,7 +375,7 @@ app.get('/api/result', async (req, res, next) =>{
     // console.log(users);
 
     // Create an array of songs and score
-    const songScores = await getSongScores(songRecord, userScoreRecords);
+    const songScores = await getSongScores(songRecords, userScoreRecords);
 
     console.log(songScores);
 
