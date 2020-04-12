@@ -68,7 +68,7 @@ app.get('/callback', function(req, res) {
     const access_token = body.access_token;
     // const refresh_token = body.refresh_token;
 
-    // Get user ID
+    // Get and return user details
     request.get(
       {
         url: 'https://api.spotify.com/v1/me',
@@ -91,7 +91,7 @@ app.get('/callback', function(req, res) {
           if (!parseInt(result.rows[0].count)){await client.query(`INSERT INTO users VALUES ('${userSpotifyID}', '${username}')`);}
           client.release();
         
-          res.redirect(uri + '?access_token=' + access_token + '&user_id=' + userSpotifyID);
+          res.redirect(uri + '?access_token=' + access_token + '&user_id=' + userSpotifyID + '&username=' + username);
 
         } catch (err) {
           console.error(err);
