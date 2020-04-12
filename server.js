@@ -330,18 +330,33 @@ app.post('/api/playlist', async (req, res, next) => {
 // GET order of songs based on top 10
 
 async function getResultsRecords() {
-  
+  try {
+    const client = await pool.connect();
+    const result = {
+      songRecords: await client.query(`SELECT songid, songname, addedbyuserid FROM songs`),
+      userScoreRecords: await client.query(`SELECT songid, score FROM song_user_score`),
+      users: await client.query(`SELECT * FROM users`)
+    };
+    client.release();
+    return result;
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
 }
 
 app.get('/api/result', (req, res, next) =>{
   console.log("\nGETTING topsongs\n");
   const maxSongs = 10;
   try {
-    const client = pool.connect();
-    const songRecords = client.query(`SELECT songid, songname, addedbyuserid FROM songs`);
-    const userScoreRecords = client.query(`SELECT songid, score FROM song_user_score`);
-    const users = client.query(`SELECT * FROM users`);
-    client.release();
+
+    const query = getResultsRecords();
+    if (query === null){
+      res.status(500).send(err);
+    }
+    const songRecords = query.songRecords;
+    const userScoreRecords = query.userScoreRecords;
+    const users = query.users;
 
     // console.log(songRecords);
     // console.log(userScoreRecords);
