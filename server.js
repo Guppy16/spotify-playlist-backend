@@ -348,7 +348,7 @@ app.get('/api/result', async (req, res, next) =>{
       let songScore = 0;
       userScoreRecords.rows.forEach( scoreRecord => {
         if (scoreRecord.songid === songRecord.songid && scoreRecord.score < maxSongScore){
-          songScore = 10 - scoreRecord.score;
+          songScore += 10 - scoreRecord.score;
         }
       });
       // console.log(songScore);
