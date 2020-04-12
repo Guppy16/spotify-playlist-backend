@@ -31,6 +31,7 @@ const pool = new Pool({
 const app = express();
 
 const redirect_uri = process.env.REDIRECT_URI || 'http://localhost:8888/callback'
+const uri = process.env.FRONTEND_URI || 'http://localhost:3000'
 
 app.get('/', (req, res) => {
   res.json('You are in here!');
@@ -78,7 +79,6 @@ app.get('/callback', function(req, res) {
         const userSpotifyID = body.id;
         const username = body.display_name;
         console.log("\tUserID: " + userSpotifyID + "\tusername: " + username);
-        res.json(userSpotifyID);
 
         // Add user to DB
         if (userSpotifyID){ // Check if userid found
@@ -90,6 +90,8 @@ app.get('/callback', function(req, res) {
           // Add person to table if necessary
           if (!parseInt(result.rows[0].count)){await client.query(`INSERT INTO users VALUES ('${userSpotifyID}', '${username}')`);}
           client.release();
+        
+          res.redirect(uri + '?access_token=' + access_token + '&user_id=' + userSpotifyID);
 
         } catch (err) {
           console.error(err);
@@ -98,7 +100,7 @@ app.get('/callback', function(req, res) {
       }
     )
 
-    const uri = process.env.FRONTEND_URI || 'http://localhost:3000'
+    //const uri = process.env.FRONTEND_URI || 'http://localhost:3000'
     res.redirect(uri + '?access_token=' + access_token)
   })
 })
