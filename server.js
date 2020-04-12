@@ -94,8 +94,7 @@ app.get('/callback', function(req, res) {
           client.release();
         
           res.redirect(uri + '?access_token=' + access_token + '&user_id=' + userSpotifyID + '&username=' + username);
-          //res.sendStatus(200);
-          console.log("wtaf");
+          console.log("wtaf"); // sometimes exectued because async?
         } catch (err) {
           console.log("ERROR found in accessing DB");
           console.error(err);
@@ -108,8 +107,6 @@ app.get('/callback', function(req, res) {
         }
       }
     )
-
-    
   })
 })
 
@@ -249,9 +246,9 @@ app.get('/api/playlist', async (req, res, next) => {
         const allSongIds = await client.query(`SELECT songid FROM songs`);
 
         // Add missing songs in song_user_score table
-        allSongIds.rows.forEach( async (song) => {
+        allSongIds.rows.forEach( async (song, index) => {
           if(!userSongIds.includes(song)){
-            await client.query(`INSERT INTO song_user_score VALUES ('${song.songid}', '${userid}', '0', '${new Date().toISOString()}', '${new Date().toISOString()}')`);
+            await client.query(`INSERT INTO song_user_score VALUES ('${song.songid}', '${userid}', '${index}', '${new Date().toISOString()}', '${new Date().toISOString()}')`);
           }
         })
 
@@ -329,9 +326,9 @@ app.post('/api/playlist', async (req, res, next) => {
     res.sendStatus(200)
   } catch (err) {
     console.error(err);
-    res.send("Error " + err);
+    res.status(500).send("Error " + err);
   }
-  res.status(500).send(req.body);
+  // res.status(500).send(req.body);
 });
 
 
