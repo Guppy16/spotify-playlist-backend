@@ -97,14 +97,19 @@ app.get('/callback', function(req, res) {
           //res.sendStatus(200);
           console.log("wtaf");
         } catch (err) {
+          console.log("ERROR found in accessing DB");
           console.error(err);
           // res.send("ERROR! " + err); // not working? maybe add this as json?
-        }}
+          //const uri = process.env.FRONTEND_URI || 'http://localhost:3000'
+          res.redirect(uri + '?access_token=' + access_token);
+        }}else{
+          console.log("ERROR spotify id not found");
+          res.redirect(uri + '?access_token=' + access_token);
+        }
       }
     )
 
-    //const uri = process.env.FRONTEND_URI || 'http://localhost:3000'
-    res.redirect(uri + '?access_token=' + access_token)
+    
   })
 })
 
