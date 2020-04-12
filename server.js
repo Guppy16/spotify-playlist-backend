@@ -229,20 +229,17 @@ app.get('/api/playlist', async (req, res, next) => {
       // Get playlist details from DB or API
       try {
         const client = await pool.connect()
-        const userid = req.query.user_id; // Get userid from body
+        const userid = req.query.user_id; // Get userid from url
+        console.log(userid)
 
         // Query all songs with userid in song_user_score
         const userSongIds = await client.query(`SELECT songid FROM song_user_score WHERE userid LIKE '${userid}'`);
-        console.log('\nUSER SONG IDS\n');
-        console.log(userSongIds);
 
         console.log('\nUSER SONG IDS.ROWS\n');
         console.log(userSongIds.rows);
 
         // Query all songid in songs
         const allSongIds = await client.query(`SELECT songid FROM songs`);
-        console.log('\nALL SONGS\n');
-        console.log(allSongIds);
 
         console.log('\nALL SONG IDS.ROWS:\n');
         console.log(allSongIds.rows)
@@ -264,6 +261,7 @@ app.get('/api/playlist', async (req, res, next) => {
           name: body.name,
           imgUrl: body.images[0].url,
           songs: userSongsScores.rows.map( row => {
+            console.log(row.duration)
             return {
               id: row.songid,
               name: row.songname,
@@ -307,7 +305,7 @@ app.get('/api/playlist', async (req, res, next) => {
 
 // POST order of playlist
 app.post('/api/playlist', async (req, res, next) => {
-  console.log(req.body);
+  //console.log(req.body);
   // Update table
   const userid = req.body.id;
   try {
@@ -316,11 +314,11 @@ app.post('/api/playlist', async (req, res, next) => {
     // Assume score already added (through get method when getting playlist)
     // for now search for all songs scored after 10/4 by user
     // UPDATE records
-    req.body.songs.forEach( item => {
+    req.body.songs.forEach( (item, index) => {
       const songid = item.id;
-      const score = item.score;
-      client.query(
-        `UPDATE song_user_score SET score='${score}', scoretimestamp='${new Date().toISOString()}', WHERE songid='${songid}' AND userid='${userid}'`
+      //const score = item.score;
+      await client.query(
+        `UPDATE song_user_score SET score='${index}', scoretimestamp='${new Date().toISOString()}', WHERE songid='${songid}' AND userid='${userid}'`
       );
     })
     client.release();
