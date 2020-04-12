@@ -346,6 +346,7 @@ async function getResultsRecords() {
 }
 
 async function getSongScores(songRecords, userScoreRecords) {
+  const maxSongs = 10;
   return songRecords.rows.forEach( (songRecord) => {
     let songScore = 0;
     userScoreRecords.rows.forEach( scoreRecord => {
