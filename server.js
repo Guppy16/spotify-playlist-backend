@@ -314,7 +314,7 @@ app.post('/api/playlist', async (req, res, next) => {
     // Assume score already added (through get method when getting playlist)
     // for now search for all songs scored after 10/4 by user
     // UPDATE records
-    req.body.songs.forEach( (item, index) => {
+    req.body.songs.forEach( async (item, index) => {
       const songid = item.id;
       //const score = item.score;
       await client.query(
