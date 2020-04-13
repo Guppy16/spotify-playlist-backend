@@ -381,7 +381,7 @@ app.get('/api/result', async (req, res, next) =>{
       userScores.push( {...user, score: userScore} );
     });
 
-    res.json({songScores: songScores, userScores: userScores});
+    res.json({songScores: songScores, userScores: userScores, users: users.rows});
     res.sendStatus(200);
 
   } catch (err) {
