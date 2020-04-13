@@ -334,7 +334,7 @@ app.get('/api/result', async (req, res, next) =>{
   try {
     const client = await pool.connect();
     const songRecords = await client.query(`SELECT songs.songid, songs.songname, songs.addedbyuserid, users.username FROM songs INNER JOIN users ON songs.addedbyuserid=users.userspotifyid`);
-    const userScoreRecords = await client.query(`SELECT songid, score FROM song_user_score`);
+    const userScoreRecords = await client.query(`SELECT songid, userid, score FROM song_user_score`);
     const users = await client.query(`SELECT * FROM users`);
     client.release();
 
@@ -346,13 +346,15 @@ app.get('/api/result', async (req, res, next) =>{
     let songScores = []
     songRecords.rows.forEach( (songRecord) => {
       let songScore = 0;
+      let userRating = [];
       userScoreRecords.rows.forEach( scoreRecord => {
-        if (scoreRecord.songid === songRecord.songid && scoreRecord.score < maxSongScore){
+        if (scoreRecord.songid === songRecord.songid && scoreRecord.score < maxSongScore && songRecord.addedbyuserid !== scoreRecord.userid){
           songScore += 10 - scoreRecord.score;
+          userRating.push({userid: scoreRecord.userid, score: scoreRecord.score });
         }
       });
       // console.log(songScore);
-      songScores.push({...songRecord, score: songScore});
+      songScores.push({...songRecord, score: songScore, userRating});
     })
     
     // Create an array of users and scores
