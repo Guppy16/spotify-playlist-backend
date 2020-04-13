@@ -351,7 +351,7 @@ app.get('/api/result', async (req, res, next) =>{
     let songScores = []
     songRecords.rows.forEach( (songRecord) => {
       let songScore = 0;
-      let allUsers = users.rows.map ( userRecord => {
+      let userRating = users.rows.map ( userRecord => {
         return {
           id: userRecord.userspotifyid,
           name: userRecord.username,
