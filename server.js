@@ -355,11 +355,12 @@ app.get('/api/result', async (req, res, next) =>{
       //     name: userRecord.username,
       //     score: 0
       // }});
+      let userRating = '-';
       userScoreRecords.rows.forEach( scoreRecord => {
         if (scoreRecord.songid === songRecord.songid && scoreRecord.score < maxSongScore && songRecord.addedbyuserid !== scoreRecord.userid){
           songScore += maxSongScore - scoreRecord.score;
           // Find userid and push score
-          const userRating = scoreRecord.userid === userid ? maxSongScore - scoreRecord.score : '-';
+          if (scoreRecord.userid === userid) {userRating = maxSongScore - scoreRecord.score}
         }
       });
       // console.log(songScore);
