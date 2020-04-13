@@ -98,7 +98,7 @@ app.get('/callback', function(req, res) {
           console.error(err);
           // res.send("ERROR! " + err); // not working? maybe add this as json?
           //const uri = process.env.FRONTEND_URI || 'http://localhost:3000'
-          res.redirect(uri + '?access_token=' + access_token);
+          res.redirect(uri + '?access_token=' + access_token + '&user_id=' + userSpotifyID + '&username=' + username);
         }}else{
           console.log("ERROR spotify id not found. probs cos invalid access token?");
           res.redirect(uri + '?access_token=' + access_token);
