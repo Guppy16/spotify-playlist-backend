@@ -331,6 +331,7 @@ app.post('/api/playlist', async (req, res, next) => {
 app.get('/api/result', async (req, res, next) =>{
   console.log("\nGETTING topsongs\n");
   const maxSongScore = 10;
+  const userid = req.query.user_id;
   try {
     const client = await pool.connect();
     const songRecords = await client.query(`SELECT songs.songid, songs.songname, songs.addedbyuserid, users.username FROM songs INNER JOIN users ON songs.addedbyuserid=users.userspotifyid`);
@@ -343,31 +344,26 @@ app.get('/api/result', async (req, res, next) =>{
     // console.log(users);
 
     // ALl userids and names
-    
-    
-
     // Create an array of songs and score
     
     let songScores = []
     songRecords.rows.forEach( (songRecord) => {
       let songScore = 0;
-      let userRating = users.rows.map ( userRecord => {
-        return {
-          id: userRecord.userspotifyid,
-          name: userRecord.username,
-          score: 0
-      }});
+      // let userRating = users.rows.map ( userRecord => {
+      //   return {
+      //     id: userRecord.userspotifyid,
+      //     name: userRecord.username,
+      //     score: 0
+      // }});
       userScoreRecords.rows.forEach( scoreRecord => {
         if (scoreRecord.songid === songRecord.songid && scoreRecord.score < maxSongScore && songRecord.addedbyuserid !== scoreRecord.userid){
-          songScore += 10 - scoreRecord.score;
-          // Fund userid and push score
-          userRating.forEach ( value => {
-            if (value.id === scoreRecord.userid){value.score = 10 - scoreRecord.score}
-          })
+          songScore += maxSongScore - scoreRecord.score;
+          // Find userid and push score
+          const userRating = scoreRecord.userid === userid ? maxSongScore - scoreRecord.score : '-';
         }
       });
       // console.log(songScore);
-      songScores.push({...songRecord, score: songScore, userRating});
+      songScores.push({...songRecord, score: songScore, userScore: userRating});
     })
     
     // Create an array of users and scores
