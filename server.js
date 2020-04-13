@@ -333,7 +333,7 @@ app.get('/api/result', async (req, res, next) =>{
   const maxSongScore = 10;
   try {
     const client = await pool.connect();
-    const songRecords = await client.query(`SELECT songs.songid, songs.songname, songs.addedbyuserid, users.username FROM songs INNER JOIN users ON songs.addedbyuserid=users.spotifyuserid`);
+    const songRecords = await client.query(`SELECT songs.songid, songs.songname, songs.addedbyuserid, users.username FROM songs INNER JOIN users ON songs.addedbyuserid=users.userspotifyid`);
     const userScoreRecords = await client.query(`SELECT songid, score FROM song_user_score`);
     const users = await client.query(`SELECT * FROM users`);
     client.release();
