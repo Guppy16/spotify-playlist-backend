@@ -333,7 +333,7 @@ app.get('/api/result', async (req, res, next) =>{
   const maxSongScore = 10;
   try {
     const client = await pool.connect();
-    const songRecords = await client.query(`SELECT songid, songname, addedbyuserid FROM songs`);
+    const songRecords = await client.query(`SELECT songs.songid, songs.songname, songs.addedbyuserid, users.username FROM songs INNER JOIN users ON songs.addedbyuserid=users.spotifyuserid`);
     const userScoreRecords = await client.query(`SELECT songid, score FROM song_user_score`);
     const users = await client.query(`SELECT * FROM users`);
     client.release();
@@ -363,7 +363,7 @@ app.get('/api/result', async (req, res, next) =>{
       songScores.forEach( songScoreItem => {
         userScore += songScoreItem.addedbyuserid === user.userspotifyid ? songScoreItem.score : 0;
       })
-      userScores.push( { name: user.username, score: userScore} );
+      userScores.push( {...user, score: userScore} );
     });
 
     res.json({songScores: songScores, userScores: userScores});
