@@ -81,12 +81,12 @@ app.get('/callback', function(req, res) {
         console.log("\nUSERID: " + userSpotifyID + "\tUSERNAME: " + username);
 
         // Add user to DB
-        if (userSpotifyID){ // Check if userid found
+        if (userSpotifyID !== ''){ // Check if userid found
         try {
           console.log("Checking if user is in DB");
           const client = await pool.connect();
           // Search for spotifyID in table
-          const result = await client.query(`SELECT COUNT(1) FROM users WHERE userspotifyid LIKE '${userSpotifyID}'`);
+          const result = await client.query(`SELECT COUNT(1) FROM users WHERE userspotifyid='${userSpotifyID}'`);
           // Add person to table if necessary
           if (!parseInt(result.rows[0].count)){await client.query(`INSERT INTO users VALUES ('${userSpotifyID}', '${username}')`);}
           client.release();
@@ -244,7 +244,8 @@ app.get('/api/playlist', async (req, res, next) => {
         // Add missing songs in song_user_score table
         allSongIds.rows.forEach( async (song, index) => {
           if(!userSongIds.includes(song.songid)){
-            await client.query(`INSERT INTO song_user_score VALUES ('${song.songid}', '${userid}', '${index}', '${new Date().toISOString()}', '${new Date().toISOString()}')`);
+            // NOTE: set default value of song score to 10, so that it doesn't affect rank
+            await client.query(`INSERT INTO song_user_score VALUES ('${song.songid}', '${userid}', '10', '${new Date().toISOString()}', '${new Date().toISOString()}')`);
           }
         })
 
@@ -378,7 +379,7 @@ app.get('/api/result', async (req, res, next) =>{
       userScores.push( {...user, score: userScore} );
     });
 
-    res.json({songScores: songScores, userScores: userScores});
+    res.json({songScores: songScores, userScores: userScores}); // REMOVED: `, users: users.rows`
     res.sendStatus(200);
 
   } catch (err) {
