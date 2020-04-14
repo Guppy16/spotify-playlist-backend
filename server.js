@@ -29,7 +29,7 @@ const pool = new Pool({
 // });
 
 const app = express();
-
+const startTimestamp = '2020-04-13T17:25:00.000Z'
 const redirect_uri = process.env.REDIRECT_URI || 'http://localhost:8888/callback'
 const uri = process.env.FRONTEND_URI || 'http://localhost:3000'
 
@@ -81,7 +81,7 @@ app.get('/callback', function(req, res) {
         console.log("\nUSERID: " + userSpotifyID + "\tUSERNAME: " + username);
 
         // Add user to DB
-        if (userSpotifyID !== ''){ // Check if userid found
+        if (userSpotifyID){ // Check if userid found
         try {
           console.log("Checking if user is in DB");
           const client = await pool.connect();
@@ -161,29 +161,33 @@ app.get('/db/songs', async (req, res) => {
     }, 
     async (error, response, body) => {
       // console.log(body);
-      const songs = body.tracks.items.map( item => ({
-        id: item.track.id,
-        name: item.track.name,
-        timestamp: item.added_at,
-        user: item.added_by.id,
-        duration: Math.round(item.track.duration_ms / 1000),
-      }));
+      const songs = body.tracks.items.map( item => {
+        if (item.added_at > startTimestamp){
+          return  {
+            id: item.track.id,
+            name: item.track.name,
+            timestamp: item.added_at,
+            user: item.added_by.id,
+            duration: Math.round(item.track.duration_ms / 1000),
+          }
+        }
+      });
 
       //res.json(body);
       try {
         const client = await pool.connect()
         // Add songs to database
-        await client.query('DELETE FROM songs');
         songs.forEach( async (song) => { // May need async with await
           await client.query(`INSERT INTO songs VALUES ('${song.id}','${song.name}','${song.timestamp}','${song.user}','${song.duration}')`);
         })
-        const result = await client.query('SELECT * FROM songs');
+        const result = await client.query(`SELECT * FROM songs WHERE songadded > '${startTimestamp}'`);
         const results = { 'results': (result) ? result.rows : null};
-        console.log(results);
+        // console.log(results);
         res.json(results);
         client.release();
       } catch (err) {
         console.error(err);
+        res.json(songs);
         res.send("Error " + err);
       }
       
@@ -234,12 +238,12 @@ app.get('/api/playlist', async (req, res, next) => {
         const client = await pool.connect()
         const userid = req.query.user_id; // Get userid from url
 
-        // Query all songs with userid in song_user_score
-        let userSongIds = await client.query(`SELECT songid FROM song_user_score WHERE userid LIKE '${userid}'`);
+        // Query all songs with userid in song_user_score after startTimestamp
+        let userSongIds = await client.query(`SELECT songid FROM song_user_score WHERE userid = '${userid}' AND originaltimestamp > '${startTimestamp}'`);
         userSongIds = userSongIds.rows.map( record => record.songid);
 
-        // Query all songid in songs
-        const allSongIds = await client.query(`SELECT songid FROM songs`);
+        // Query all songid in songs after startTimestamp
+        const allSongIds = await client.query(`SELECT songid FROM songs WHERE songadded > '${startTimestamp}'`);
 
         // Add missing songs in song_user_score table
         allSongIds.rows.forEach( async (song, index) => {
@@ -251,7 +255,7 @@ app.get('/api/playlist', async (req, res, next) => {
 
         // Use join query to get songid, songname, duration, score
         const userSongsScores = await client.query(
-          `SELECT songs.songid, songs.songname, songs.duration, song_user_score.score FROM songs INNER JOIN song_user_score ON songs.songid=song_user_score.songid AND song_user_score.userid='${userid}'`
+          `SELECT songs.songid, songs.songname, songs.duration, song_user_score.score FROM songs INNER JOIN song_user_score ON songs.songid=song_user_score.songid AND song_user_score.userid='${userid}' WHERE songs.songadded > '${startTimestamp}'`
         );
 
         // Add songs to playlist as json
@@ -282,12 +286,17 @@ app.get('/api/playlist', async (req, res, next) => {
         const playlist = {
           name: body.name,
           imgUrl: body.images[0].url,
-          songs: body.tracks.items.map( (item, index) => ({
-            id: item.track.id,
-            name: item.track.name,
-            duration: item.track.duration_ms,
-            score: index,
-        }))};
+          songs: body.tracks.items.map( (item, index) => {
+          if (item.added_at > startTimestamp)
+          {
+            return {
+              id: item.track.id,
+              name: item.track.name,
+              duration: item.track.duration_ms,
+              score: 10, // Default so that it doesn't affect rankings
+            }
+          }
+          })};
 
       res.json(playlist);
       }
@@ -335,8 +344,8 @@ app.get('/api/result', async (req, res, next) =>{
   const userid = req.query.user_id;
   try {
     const client = await pool.connect();
-    const songRecords = await client.query(`SELECT songs.songid, songs.songname, songs.addedbyuserid, users.username FROM songs INNER JOIN users ON songs.addedbyuserid=users.userspotifyid`);
-    const userScoreRecords = await client.query(`SELECT songid, userid, score FROM song_user_score`);
+    const songRecords = await client.query(`SELECT songs.songid, songs.songname, songs.addedbyuserid, users.username FROM songs INNER JOIN users ON songs.addedbyuserid=users.userspotifyid WHERE songadded > '${startTimestamp}'`);
+    const userScoreRecords = await client.query(`SELECT songid, userid, score FROM song_user_score WHERE originaltimestamp > '${startTimestamp}'`);
     const users = await client.query(`SELECT * FROM users`);
     client.release();
 
