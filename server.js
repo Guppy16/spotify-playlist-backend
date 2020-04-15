@@ -2,7 +2,7 @@ const express = require('express');
 const request = require('request');
 const querystring = require('querystring');
 const bodyParser = require('body-parser');
-
+require('dotenv').config();
 // const parseurl = require('parseurl');
 // const path = require('path');
 // const expressValidator = require('express-validator');
@@ -174,6 +174,7 @@ app.get('/db/songs', async (req, res) => {
       }, []);
 
       //res.json(body);
+      if (songs){
       try {
         const client = await pool.connect()
         // Add songs to database
@@ -190,6 +191,7 @@ app.get('/db/songs', async (req, res) => {
         console.error(err);
         res.json(songs);
         res.send("Error " + err);
+      }
       }
       
       }
