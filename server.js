@@ -30,8 +30,8 @@ const pool = new Pool({
 
 const app = express();
 const startTimestamp = '2020-04-13T17:25:00.000Z'
-const redirect_uri = process.env.REDIRECT_URI || 'http://localhost:8888/callback'
-const uri = process.env.FRONTEND_URI || 'http://localhost:3000'
+const redirect_uri = process.env.REDIRECT_URI
+const uri = process.env.FRONTEND_URI
 
 app.get('/', (req, res) => {
   res.json('You are in here!');
@@ -58,7 +58,7 @@ app.get('/callback', function(req, res) {
       grant_type: 'authorization_code'
     },
     headers: {
-      'Authorization': 'Basic ' + (new Buffer(
+      'Authorization': 'Basic ' + (Buffer.from(
         process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET
       ).toString('base64'))
     },
@@ -114,7 +114,7 @@ app.get('/refresh_token', function(req, res) {
   const refresh_token = req.query.refresh_token;
   const authOptions = {
     url: 'https://accounts.spotify.com/api/token',
-    headers: { 'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64')) },
+    headers: { 'Authorization': 'Basic ' + (Buffer.from(client_id + ':' + client_secret).toString('base64')) },
     form: {
       grant_type: 'refresh_token',
       refresh_token: refresh_token
@@ -213,7 +213,7 @@ app.get('/db/songs', async (req, res) => {
 
 // USE functions to attach to headers
 app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URI || 'http://localhost:3000'); 
+  res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URI); 
   res.header("Access-Control-Allow-Headers", "Content-Type, Accept");
   next();
 });
@@ -403,6 +403,6 @@ app.get('/api/result', async (req, res, next) =>{
   }
 })
 
-let port = process.env.PORT || 8888
+let port = process.env.PORT
 console.log(`Listening on port ${port}. Go /login to initiate authentication flow.`)
 app.listen(port)
