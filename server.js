@@ -161,23 +161,24 @@ app.get('/db/songs', async (req, res) => {
     }, 
     async (error, response, body) => {
       // console.log(body);
-      const songs = body.tracks.items.map( item => {
-        if (item.added_at > startTimestamp){
-          return  {
+      const songs = body.tracks.items.reduce( (songsList, item) => {
+        return item.added_at > startTimestamp
+          ? songsList.concat({
             id: item.track.id,
             name: item.track.name,
             timestamp: item.added_at,
             user: item.added_by.id,
             duration: Math.round(item.track.duration_ms / 1000),
-          }
-        }
-      });
+          })
+          : songsList;
+      }, []);
 
       //res.json(body);
       try {
         const client = await pool.connect()
         // Add songs to database
         songs.forEach( async (song) => { // May need async with await
+          song.id && // Ensure that it exists before querying db
           await client.query(`INSERT INTO songs VALUES ('${song.id}','${song.name}','${song.timestamp}','${song.user}','${song.duration}')`);
         })
         const result = await client.query(`SELECT * FROM songs WHERE songadded > '${startTimestamp}'`);
@@ -282,21 +283,24 @@ app.get('/api/playlist', async (req, res, next) => {
 
         // Return playlist using spotify API instead of DB
 
-        // console.log(body);
+        //console.log(body.tracks.items);
         const playlist = {
           name: body.name,
           imgUrl: body.images[0].url,
-          songs: body.tracks.items.map( (item, index) => {
-          if (item.added_at > startTimestamp)
-          {
-            return {
-              id: item.track.id,
-              name: item.track.name,
-              duration: item.track.duration_ms,
-              score: 10, // Default so that it doesn't affect rankings
+          songs: body.tracks.items.reduce( (songsList, item) => {
+            if (item.added_at > startTimestamp)
+            {
+              return songsList.concat ({
+                id: item.track.id,
+                name: item.track.name,
+                duration: item.track.duration_ms,
+                score: 10, // Default so that it doesn't affect rankings
+              });
+            }else{
+              return songsList;
             }
-          }
-          })};
+          }, [])
+        };
 
       res.json(playlist);
       }
