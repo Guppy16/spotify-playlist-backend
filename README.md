@@ -1,3 +1,6 @@
+## TO DO
+- Fix when users enter their own songs into top 10
+
 # Server to allow client access to spotify
 
 # Helpful commands
