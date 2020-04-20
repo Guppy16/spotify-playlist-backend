@@ -510,9 +510,11 @@ app.get('/callback-google', async (req, res, next) => {
       };
       return prev
     }, {});
-    const emptyUserScore = usersDict.map( () => 0);
+    
     console.log("\nEMPTY USER SCORE\n");
     console.log(emptyUserScore);
+
+    const emptyUserScore = Object.keys(usersDict).map( () => 0);
 
     // Create an array of songs and score
     let csv = [];
