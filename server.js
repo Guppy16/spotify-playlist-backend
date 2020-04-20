@@ -512,7 +512,7 @@ app.get('/callback-google', async (req, res, next) => {
     }, {});
     
     console.log("\nEMPTY USER SCORE\n");
-    console.log(emptyUserScore);
+    console.log(usersDict);
 
     const emptyUserScore = Object.keys(usersDict).map( () => 0);
 
