@@ -534,7 +534,7 @@ app.get('/api/result', async (req, res, next) => {
     });
 
     res.json({ songScores: songScores, userScores: userScores }); // REMOVED: `, users: users.rows`
-    res.sendStatus(200);
+    // res.sendStatus(200);
 
   } catch (err) {
     console.error(err);
