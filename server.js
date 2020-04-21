@@ -26,6 +26,39 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+async function getDates(weeksAgoNum) {
+  weeksAgoNum = weeksAgoNum ? weeksAgoNum : 0;
+  console.log(weeksAgoNum);
+  try{
+    const client = await pool.connect()
+    const result = await client.query('SELECT * FROM session_start');
+    client.release();
+    const dates = result.rows.sort( (a,b) => b.starttimestamp - a.starttimestamp); // Sort descending order
+    console.log(dates);
+    
+    if (weeksAgoNum === dates.length){
+      console.log("ERROR: too many weeks ago");
+      return null;
+    }
+
+    const start = new Date(dates[weeksAgoNum].starttimestamp).toISOString();
+    return {
+      start: start,
+      end: weeksAgoNum 
+      ? new Date().setDate(start.getDate()  + 14).toISOString() // Default 2 wks after start date
+      : new Date(dates[weeksAgoNum - 1].starttimestamp).toISOString(),
+    }
+  } catch(err) {
+    console.error(err);
+    // Assume using localhost
+    console.log("Returning default date");
+    return {
+      start: '2020-04-07 00:00:00',
+      end: '2020-04-13 17:42:00',
+    }
+  }
+}
+
 const app = express();
 const startTimestamp = '2020-04-13T17:25:00.000Z' // UCT
 const redirect_uri = process.env.REDIRECT_URI
@@ -40,7 +73,7 @@ app.get('/login', function (req, res) {
     querystring.stringify({
       response_type: 'code',
       client_id: process.env.SPOTIFY_CLIENT_ID,
-      scope: 'user-read-private user-read-email',
+      scope: 'user-read-private user-read-email playlist-modify-private',
       redirect_uri
     }))
 })
@@ -149,6 +182,12 @@ app.get('/db', async (req, res) => {
 // Database to retreive songs
 app.get('/db/songs', async (req, res) => {
 
+  // Get dates
+  const weeksAgo = req.query.weeksAgo;
+  const startEndDates = await getDates(weeksAgo);
+  console.log("DATES")
+  console.log(startEndDates);
+
   // Get access token to get playlist details
   const accessToken = req.query.access_token;
   if (accessToken) {
@@ -161,7 +200,7 @@ app.get('/db/songs', async (req, res) => {
       async (error, response, body) => {
         // console.log(body);
         const songs = body.tracks.items.reduce((songsList, item) => {
-          return item.added_at > startTimestamp
+          return item.added_at > startEndDates.start
             ? songsList.concat({
               id: item.track.id,
               name: item.track.name,
@@ -181,7 +220,7 @@ app.get('/db/songs', async (req, res) => {
               song.id && // Ensure that it exists before querying db
                 await client.query(`INSERT INTO songs VALUES ('${song.id}','${song.name}','${song.timestamp}','${song.user}','${song.duration}')`);
             })
-            const result = await client.query(`SELECT * FROM songs WHERE songadded > '${startTimestamp}'`);
+            const result = await client.query(`SELECT * FROM songs WHERE songadded > '${startEndDates.start}'`);
             const results = { 'results': (result) ? result.rows : null };
             // console.log(results);
             res.json(results);
@@ -254,7 +293,6 @@ app.get('/test', (req, res) => {
   const accessToken = req.query.access_token;
   if (accessToken) {
     // Get collabroative playlist data
-    const options = 
     request({
       url: 'https://api.spotify.com/v1/playlists/0vdP5KBMbb08iGLktRXjIn',
       headers: { 'Authorization': 'Bearer ' + accessToken },
@@ -265,33 +303,36 @@ app.get('/test', (req, res) => {
         const songUri = body.tracks.items.reduce((songsList, item) => {
           return item.added_at > startTimestamp
             ? songsList.concat({
-              track: item.track.uri,
+              "uri": item.track.uri,
             })
             : songsList;
         }, []);
-        const trackUris = { "tracks": songUri.slice(1, 3) };
-        console.log(songUri.slice(1, 3))
+        const trackUris = { "tracks": songUri };
+        tracks = JSON.stringify(trackUris)
+        console.log(tracks)
 
         // Delete tracks
 
-        // Get and return user details
         const options = {
-          url: 'https://api.spotify.com/v1/playlist/0vdP5KBMbb08iGLktRXjIn/tracks',
+          url: 'https://api.spotify.com/v1/playlists/0vdP5KBMbb08iGLktRXjIn/tracks',
           method: 'DELETE',
-          headers: { 'Authorization': 'Bearer ' + accessToken },
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + accessToken,
+          },
           json: true,
-          form: {
-            tracks: songUri.slice(1, 3),
-          }
+          "tracks": [{ "uri": "spotify:track:2qQg4qcqJmAalzRwhgf5mt" }],
         }
+        console.log(options)
         request(options, (error, response, body) => {
-            console.log(body);
-            // console.log(response);
-            console.log(error);
-            res.status(200).send("Maybe done");
-          }
+          console.log(body);
+          // console.log(response);
+          console.error(error);
+          res.status(200).send("Maybe done");
+        }
         );
-        
+
       }
     )
   }
@@ -503,24 +544,26 @@ app.get('/callback-google', async (req, res, next) => {
     client.release();
 
     // Map all users to indexes in csv
-    const usersDict = users.rows.reduce( (prev, user, index) => {
+    const usersDict = users.rows.reduce((prev, user, index) => {
       prev[user.userspotifyid] = {
         username: user.username,
         index: index
       };
       return prev
     }, {});
-    
-    console.log("\nEMPTY USER SCORE\n");
+
+    console.log("\nUSERS DICT\n");
     console.log(usersDict);
 
-    const emptyUserScore = Object.keys(usersDict).map( () => 0);
+    const emptyUserScore = Object.keys(usersDict).map(() => 0);
+    console.log("\nEMPTY USER SCORE\n");
+    console.log(emptyUserScore);
 
     // Create an array of songs and score
     let csv = [];
 
-    const songsDict = songRecords.rows.reduce( (prev, song, index) => {
-      csv.push([song.songname, song.addedbyuserid].push(
+    const songsDict = songRecords.rows.reduce((prev, song, index) => {
+      csv.push([song.songname, usersDict[song.addedbyuserid].username].concat(
         emptyUserScore
       ));
       prev[song.songid] = {
@@ -530,6 +573,11 @@ app.get('/callback-google', async (req, res, next) => {
       }
       return prev;
     }, {});
+
+    console.log("\n SONGS DICT \n");
+    console.log(songsDict);
+
+
     console.log("\n SONG FILLED CSV \n");
     console.log(csv);
 
@@ -556,6 +604,11 @@ app.get('/callback-google', async (req, res, next) => {
     console.error(err);
     res.status(500).send("Error: " + err);
   }
+})
+
+app.get('/api/playlist/delete', (req, res) => {
+  // Get dongs to delete from /db/songs/delete
+
 })
 
 let port = process.env.PORT

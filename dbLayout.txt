@@ -1,11 +1,11 @@
-songs: songid, songname, timestamp, addedbyuserid
+songs: songid, songname, songadded, addedbyuserid
 (may need id in case song gets added as duplicate?)
 
-users: userspotifyid, username
+users: userspotifyid, username, confirmedvote
 
-song_user_score: songId, userID, score, time
+song_user_score: songid, userid, score, scoretimestamp, originaltimestamp
 
-history: date
+session_start: starttimestamp
 
 
 
