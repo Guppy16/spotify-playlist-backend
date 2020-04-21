@@ -220,7 +220,7 @@ app.get('/db/songs', async (req, res) => {
               song.id && // Ensure that it exists before querying db
                 await client.query(`INSERT INTO songs VALUES ('${song.id}','${song.name}','${song.timestamp}','${song.user}','${song.duration}')`);
             })
-            const result = await client.query(`SELECT * FROM songs WHERE songadded > '${startEndDates.start}'`);
+            const result = await client.query(`SELECT * FROM songs WHERE songadded BETWEEN '${startEndDates.start}' AND '${startEndDates.end}'`);
             const results = { 'results': (result) ? result.rows : null };
             // console.log(results);
             res.json(results);
