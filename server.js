@@ -60,7 +60,7 @@ async function getDates(weeksAgoNum) {
 }
 
 const app = express();
-const startTimestamp = '2020-04-13T17:25:00.000Z' // UCT
+// const startTimestamp = '2020-04-13T17:25:00.000Z' // UCT
 const redirect_uri = process.env.REDIRECT_URI
 const uri = process.env.FRONTEND_URI
 
@@ -185,8 +185,8 @@ app.get('/db/songs', async (req, res) => {
   // Get dates
   const weeksAgo = req.query.weeksAgo;
   const startEndDates = await getDates(weeksAgo);
-  console.log("DATES")
-  console.log(startEndDates);
+  // console.log("DATES")
+  // console.log(startEndDates);
 
   // Get access token to get playlist details
   const accessToken = req.query.access_token;
@@ -301,7 +301,7 @@ app.get('/test', (req, res) => {
       (error, response, body) => {
         // console.log(body);
         const songUri = body.tracks.items.reduce((songsList, item) => {
-          return item.added_at > startTimestamp
+          return item.added_at > '2020-04-13T17:25:00.000Z' // arbitrary date
             ? songsList.concat({
               "uri": item.track.uri,
             })
@@ -355,6 +355,10 @@ app.get('/api/playlist', async (req, res, next) => {
 
   console.log('Getting data from api/playlist');
 
+  // Get dates
+  // const weeksAgo = req.query.weeksAgo;
+  const startEndDates = await getDates(0); // Can only get week 0, so that they can't modify prev scores
+
   // Get playlist meta data using spotify API, but song data from DB
   const accessToken = req.query.access_token;
   if (accessToken) {
@@ -373,11 +377,11 @@ app.get('/api/playlist', async (req, res, next) => {
           const userid = req.query.user_id; // Get userid from url
 
           // Query all songs with userid in song_user_score after startTimestamp
-          let userSongIds = await client.query(`SELECT songid FROM song_user_score WHERE userid = '${userid}' AND originaltimestamp > '${startTimestamp}'`);
+          let userSongIds = await client.query(`SELECT songid FROM song_user_score WHERE userid = '${userid}' AND originaltimestamp BETWEEN '${startEndDates.start}' AND '${startEndDates.end}'`);
           userSongIds = userSongIds.rows.map(record => record.songid);
 
           // Query all songid in songs after startTimestamp
-          const allSongIds = await client.query(`SELECT songid FROM songs WHERE songadded > '${startTimestamp}'`);
+          const allSongIds = await client.query(`SELECT songid FROM songs WHERE songadded BETWEEN '${startEndDates.start}' AND '${startEndDates.end}'`);
 
           // Add missing songs in song_user_score table
           allSongIds.rows.forEach(async (song, index) => {
@@ -389,7 +393,7 @@ app.get('/api/playlist', async (req, res, next) => {
 
           // Use join query to get songid, songname, duration, score
           const userSongsScores = await client.query(
-            `SELECT songs.songid, songs.songname, songs.duration, song_user_score.score FROM songs INNER JOIN song_user_score ON songs.songid=song_user_score.songid AND song_user_score.userid='${userid}' WHERE songs.songadded > '${startTimestamp}'`
+            `SELECT songs.songid, songs.songname, songs.duration, song_user_score.score FROM songs INNER JOIN song_user_score ON songs.songid=song_user_score.songid AND song_user_score.userid='${userid}' WHERE songs.songadded BETWEEN '${startEndDates.start}' AND '${startEndDates.end}'`
           );
 
           // Add songs to playlist as json
@@ -421,7 +425,7 @@ app.get('/api/playlist', async (req, res, next) => {
             name: body.name,
             imgUrl: body.images[0].url,
             songs: body.tracks.items.reduce((songsList, item) => {
-              if (item.added_at > startTimestamp) {
+              if (item.added_at > startEndDates.start && item.added_at < startEndDates.end) {
                 return songsList.concat({
                   id: item.track.id,
                   name: item.track.name,
@@ -476,12 +480,17 @@ app.post('/api/playlist', async (req, res, next) => {
 // GET order of songs based on top 10
 app.get('/api/result', async (req, res, next) => {
   console.log("\nGETTING topsongs\n");
+
+  // Get dates
+  const weeksAgo = req.query.weeksAgo;
+  const startEndDates = await getDates(weeksAgo);
+
   const maxSongScore = 10;
   const userid = req.query.user_id;
   try {
     const client = await pool.connect();
-    const songRecords = await client.query(`SELECT songs.songid, songs.songname, songs.addedbyuserid, users.username FROM songs INNER JOIN users ON songs.addedbyuserid=users.userspotifyid WHERE songadded > '${startTimestamp}'`);
-    const userScoreRecords = await client.query(`SELECT songid, userid, score FROM song_user_score WHERE originaltimestamp > '${startTimestamp}'`);
+    const songRecords = await client.query(`SELECT songs.songid, songs.songname, songs.addedbyuserid, users.username FROM songs INNER JOIN users ON songs.addedbyuserid=users.userspotifyid WHERE songadded BETWEEN '${startEndDates.start}' AND '${startEndDates.end}'`);
+    const userScoreRecords = await client.query(`SELECT songid, userid, score FROM song_user_score WHERE originaltimestamp BETWEEN '${startEndDates.start}' AND '${startEndDates.end}'`);
     const users = await client.query(`SELECT * FROM users`);
     client.release();
 
@@ -535,11 +544,16 @@ app.get('/api/result', async (req, res, next) => {
 
 app.get('/callback-google', async (req, res, next) => {
   console.log("\nGETTING topsongs\n");
+
+  // Get dates
+  const weeksAgo = req.query.weeksAgo;
+  const startEndDates = await getDates(weeksAgo);
+
   const maxSongScore = 10;
   try {
     const client = await pool.connect();
-    const songRecords = await client.query(`SELECT songs.songid, songs.songname, songs.addedbyuserid, users.username FROM songs INNER JOIN users ON songs.addedbyuserid=users.userspotifyid WHERE songadded > '${startTimestamp}'`);
-    const userScoreRecords = await client.query(`SELECT songid, userid, score FROM song_user_score WHERE originaltimestamp > '${startTimestamp}'`);
+    const songRecords = await client.query(`SELECT songs.songid, songs.songname, songs.addedbyuserid, users.username FROM songs INNER JOIN users ON songs.addedbyuserid=users.userspotifyid WHERE songadded BETWEEN '${startEndDates.start}' AND '${startEndDates.end}'`);
+    const userScoreRecords = await client.query(`SELECT songid, userid, score FROM song_user_score WHERE originaltimestamp BETWEEN '${startEndDates.start}' AND '${startEndDates.end}'`);
     const users = await client.query(`SELECT * FROM users`);
     client.release();
 
