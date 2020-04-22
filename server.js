@@ -608,16 +608,18 @@ app.get('/callback-google', async (req, res, next) => {
     songname, addedBy, username_i ...
     */
 
+    console.log(userScoreRecords);
+
     userScoreRecords.rows.forEach(scoreRecord => {
       console.log("songid: " + scoreRecord.songid);
       console.log("userid: " + scoreRecord.userid);
-      if (scoreRecord.score < maxSongScore && songsDict[scoreRecord.songid].addedBy !== scoreRecord.userid) {
+      if (scoreRecord.songid && scoreRecord.userid && scoreRecord.score < maxSongScore && songsDict[scoreRecord.songid].addedBy !== scoreRecord.userid) {
         // Add entry to csv
         const songIndex = songsDict[scoreRecord.songid].index;
         console.log("Song index: " + songIndex);
         const userIndex = usersDict[scoreRecord.userid].index;
         console.log("user index: " + userIndex);
-        csv[songIndex][userIndex] = scoreRecord.score;
+        csv[songIndex][userIndex] = maxSongScore - scoreRecord.score;
       }
     });
 
