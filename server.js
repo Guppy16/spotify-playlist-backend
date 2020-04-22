@@ -29,14 +29,14 @@ const pool = new Pool({
 async function getDates(weeksAgoNum) {
   weeksAgoNum = weeksAgoNum ? weeksAgoNum : 0;
   console.log(weeksAgoNum);
-  try{
+  try {
     const client = await pool.connect()
     const result = await client.query('SELECT * FROM session_start');
     client.release();
-    const dates = result.rows.sort( (a,b) => b.starttimestamp - a.starttimestamp); // Sort descending order
+    const dates = result.rows.sort((a, b) => b.starttimestamp - a.starttimestamp); // Sort descending order
     console.log(dates);
-    
-    if (weeksAgoNum === dates.length){
+
+    if (weeksAgoNum === dates.length) {
       console.log("ERROR: too many weeks ago");
       return null;
     }
@@ -45,16 +45,16 @@ async function getDates(weeksAgoNum) {
     return {
       start: start,
       end: weeksAgoNum // Check is weeksAgoNum = 0
-      ? new Date(dates[weeksAgoNum - 1].starttimestamp).toISOString()
-      : new Date(new Date().setDate(new Date(start).getDate() + 7)).toISOString(), // Default 1 wk after start date
+        ? new Date(dates[weeksAgoNum - 1].starttimestamp).toISOString()
+        : new Date(new Date().setDate(new Date(start).getDate() + 7)).toISOString(), // Default 1 wk after start date
     }
-  } catch(err) {
+  } catch (err) {
     console.error(err);
     // Assume using localhost
-    console.log("Returning default date");
+    console.log("Returning default date (start to today)");
     return {
       start: '2020-04-07 00:00:00',
-      end: '2020-04-13 17:42:00',
+      end: new Date().toISOString(),
     }
   }
 }
@@ -73,7 +73,7 @@ app.get('/login', function (req, res) {
     querystring.stringify({
       response_type: 'code',
       client_id: process.env.SPOTIFY_CLIENT_ID,
-      scope: 'user-read-private user-read-email playlist-modify-private',
+      scope: 'user-read-private user-read-email', // + 'playlist-modify-private'
       redirect_uri
     }))
 })
@@ -179,7 +179,7 @@ app.get('/db', async (req, res) => {
   }
 })
 
-// Database to retreive songs
+// Database to retreive songs and update db
 app.get('/db/songs', async (req, res) => {
 
   // Get dates
@@ -191,14 +191,16 @@ app.get('/db/songs', async (req, res) => {
   // Get access token to get playlist details
   const accessToken = req.query.access_token;
   if (accessToken) {
-    // Get collabroative playlist data
+    // Get collaborative playlist data
     request.get({
       url: 'https://api.spotify.com/v1/playlists/7JJzP95ARTN2A08g7xahXD',
       headers: { 'Authorization': 'Bearer ' + accessToken },
       json: true
     },
       async (error, response, body) => {
+        // Only get songs after a certain date
         // console.log(body);
+        // May need error handling if error received with getting access token: if body.error...
         const songs = body.tracks.items.reduce((songsList, item) => {
           return item.added_at > startEndDates.start
             ? songsList.concat({
@@ -211,24 +213,26 @@ app.get('/db/songs', async (req, res) => {
             : songsList;
         }, []);
 
-        //res.json(body);
         if (songs) {
           try {
             const client = await pool.connect()
             // Add songs to database
-            songs.forEach(async (song) => { // May need async with await
+            songs.forEach(async (song) => {
               song.id && // Ensure that it exists before querying db
                 await client.query(`INSERT INTO songs VALUES ('${song.id}','${song.name}','${song.timestamp}','${song.user}','${song.duration}')`);
             })
+            // Get songs for debugging
+            /*
             const result = await client.query(`SELECT * FROM songs WHERE songadded BETWEEN '${startEndDates.start}' AND '${startEndDates.end}'`);
-            const results = { 'results': (result) ? result.rows : null };
-            // console.log(results);
-            res.json(results);
             client.release();
+            const results = { 'results': (result) ? result.rows : null };
+            res.json(results);
+            */
+            res.sendStatus(200);
           } catch (err) {
             console.error(err);
-            res.json(songs);
-            res.send("Error " + err);
+            console.log(songs);
+            res.send("ERROR: somgething went wrong updating the songs:\n" + err);
           }
         }
 
