@@ -565,7 +565,6 @@ app.get('/callback-google', async (req, res, next) => {
     let csv = [];
     let firstRow = ['songs','addedBy',];
 
-
     // Map all users to indexes in csv
     // And fill in first row of csv
     const usersDict = users.rows.reduce((prev, user, index) => {
@@ -576,6 +575,8 @@ app.get('/callback-google', async (req, res, next) => {
       firstRow.push(user.username);
       return prev;
     }, {});
+
+    csv.push(firstRow);
 
     console.log("\nUSERS DICT\n");
     console.log(usersDict);
@@ -608,10 +609,14 @@ app.get('/callback-google', async (req, res, next) => {
     */
 
     userScoreRecords.rows.forEach(scoreRecord => {
+      console.log("songid: " + scoreRecord.songid);
+      console.log("userid: " + scoreRecord.userid);
       if (scoreRecord.score < maxSongScore && songsDict[scoreRecord.songid].addedBy !== scoreRecord.userid) {
         // Add entry to csv
         const songIndex = songsDict[scoreRecord.songid].index;
+        console.log("Song index: " + songIndex);
         const userIndex = usersDict[scoreRecord.userid].index;
+        console.log("user index: " + userIndex);
         csv[songIndex][userIndex] = scoreRecord.score;
       }
     });
