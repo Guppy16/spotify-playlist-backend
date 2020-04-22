@@ -552,12 +552,14 @@ app.get('/callback-google', async (req, res, next) => {
   // Get dates
   const weeksAgo = req.query.weeksAgo;
   const startEndDates = await getDates(weeksAgo);
+  console.log("START END DATES:\n");
+  console.log(startEndDates);
 
   const maxSongScore = 10;
   try {
     const client = await pool.connect();
     const songRecords = await client.query(`SELECT songs.songid, songs.songname, songs.addedbyuserid, users.username FROM songs INNER JOIN users ON songs.addedbyuserid=users.userspotifyid WHERE songadded BETWEEN '${startEndDates.start}' AND '${startEndDates.end}'`);
-    const userScoreRecords = await client.query(`SELECT songid, userid, score FROM song_user_score WHERE originaltimestamp BETWEEN '${startEndDates.start}' AND '${startEndDates.end}'`);
+    const userScoreRecords = await client.query(`SELECT songid, userid, score FROM song_user_score WHERE score < ${maxSongScore} AND originaltimestamp BETWEEN '${startEndDates.start}' AND '${startEndDates.end}'`);
     const users = await client.query(`SELECT * FROM users`);
     client.release();
 
@@ -608,11 +610,10 @@ app.get('/callback-google', async (req, res, next) => {
     songname, addedBy, username_i ...
     */
 
-    console.log(userScoreRecords);
+    // console.log(userScoreRecords);
 
     userScoreRecords.rows.forEach(scoreRecord => {
-      console.log("songid: " + scoreRecord.songid);
-      console.log("userid: " + scoreRecord.userid);
+      console.log(scoreRecord);
       if (scoreRecord.songid && scoreRecord.userid && scoreRecord.score < maxSongScore && songsDict[scoreRecord.songid].addedBy !== scoreRecord.userid) {
         // Add entry to csv
         const songIndex = songsDict[scoreRecord.songid].index;
@@ -625,6 +626,9 @@ app.get('/callback-google', async (req, res, next) => {
 
     console.log("\n SONGS SCORE FILLED \n");
     console.log(csv);
+
+    // convert csv array to actual csv
+
 
     res.json(csv);
     // res.sendStatus(200);
