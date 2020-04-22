@@ -561,13 +561,20 @@ app.get('/callback-google', async (req, res, next) => {
     const users = await client.query(`SELECT * FROM users`);
     client.release();
 
+    // Create an array of songs and score
+    let csv = [];
+    let firstRow = ['songs','addedBy',];
+
+
     // Map all users to indexes in csv
+    // And fill in first row of csv
     const usersDict = users.rows.reduce((prev, user, index) => {
       prev[user.userspotifyid] = {
         username: user.username,
-        index: index
+        index: index + 2
       };
-      return prev
+      firstRow.push(user.username);
+      return prev;
     }, {});
 
     console.log("\nUSERS DICT\n");
@@ -577,9 +584,6 @@ app.get('/callback-google', async (req, res, next) => {
     console.log("\nEMPTY USER SCORE\n");
     console.log(emptyUserScore);
 
-    // Create an array of songs and score
-    let csv = [];
-
     const songsDict = songRecords.rows.reduce((prev, song, index) => {
       csv.push([song.songname, usersDict[song.addedbyuserid].username].concat(
         emptyUserScore
@@ -587,14 +591,13 @@ app.get('/callback-google', async (req, res, next) => {
       prev[song.songid] = {
         songname: song.songname,
         addedBy: song.addedbyuserid,
-        index: index
+        index: index + 1
       }
       return prev;
     }, {});
 
     console.log("\n SONGS DICT \n");
     console.log(songsDict);
-
 
     console.log("\n SONG FILLED CSV \n");
     console.log(csv);
@@ -607,16 +610,17 @@ app.get('/callback-google', async (req, res, next) => {
     userScoreRecords.rows.forEach(scoreRecord => {
       if (scoreRecord.score < maxSongScore && songsDict[scoreRecord.songid].addedBy !== scoreRecord.userid) {
         // Add entry to csv
-        csv[songsDict[scoreRecord.songid].index][usersDict[scoreRecord.userid]] = scoreRecord.score;
+        const songIndex = songsDict[scoreRecord.songid].index;
+        const userIndex = usersDict[scoreRecord.userid].index;
+        csv[songIndex][userIndex] = scoreRecord.score;
       }
     });
 
     console.log("\n SONGS SCORE FILLED \n");
     console.log(csv);
 
-
     res.json(csv);
-    res.sendStatus(200);
+    // res.sendStatus(200);
 
   } catch (err) {
     console.error(err);
