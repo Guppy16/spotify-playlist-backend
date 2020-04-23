@@ -37,7 +37,7 @@ async function getDates(weeksAgoNum) {
     const dates = result.rows.sort((a, b) => b.starttimestamp - a.starttimestamp); // Sort descending order
     console.log(dates);
 
-    if (weeksAgoNum === dates.length) {
+    if (weeksAgoNum >= dates.length) {
       console.log("ERROR: too many weeks ago");
       return null;
     }
@@ -46,8 +46,8 @@ async function getDates(weeksAgoNum) {
     return {
       start: start,
       end: weeksAgoNum === 0 // Check is weeksAgoNum = 0
-        ? new Date(dates[weeksAgoNum - 1].starttimestamp).toISOString()
-        : new Date(new Date().setDate(new Date(start).getDate() + 7)).toISOString(), // Default 1 wk after start date
+        ? new Date(new Date().setDate(new Date(start).getDate() + 7)).toISOString() // Default 1 wk after start date
+        : new Date(dates[weeksAgoNum - 1].starttimestamp).toISOString(),
     }
   } catch (err) {
     console.error(err);
