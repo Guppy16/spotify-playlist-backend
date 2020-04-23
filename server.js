@@ -27,6 +27,7 @@ const pool = new Pool({
 });
 
 async function getDates(weeksAgoNum) {
+  console.log(weeksAgoNum);
   weeksAgoNum = weeksAgoNum ? weeksAgoNum : 0;
   console.log(weeksAgoNum);
   try {
@@ -547,7 +548,7 @@ app.get('/api/result', async (req, res, next) => {
 })
 
 app.get('/callback-google', async (req, res, next) => {
-  console.log("\nGETTING topsongs\n");
+  console.log("\nGETTING collated results\n");
 
   // Get dates
   const weeksAgo = req.query.weeksAgo;
@@ -580,12 +581,12 @@ app.get('/callback-google', async (req, res, next) => {
 
     csv.push(firstRow);
 
-    console.log("\nUSERS DICT\n");
-    console.log(usersDict);
+    // console.log("\nUSERS DICT\n");
+    // console.log(usersDict);
 
     const emptyUserScore = Object.keys(usersDict).map(() => 0);
-    console.log("\nEMPTY USER SCORE\n");
-    console.log(emptyUserScore);
+    // console.log("\nEMPTY USER SCORE\n");
+    // console.log(emptyUserScore);
 
     const songsDict = songRecords.rows.reduce((prev, song, index) => {
       csv.push([song.songname, usersDict[song.addedbyuserid].username].concat(
@@ -599,33 +600,34 @@ app.get('/callback-google', async (req, res, next) => {
       return prev;
     }, {});
 
-    console.log("\n SONGS DICT \n");
-    console.log(songsDict);
+    // console.log("\n SONGS DICT \n");
+    // console.log(songsDict);
 
-    console.log("\n SONG FILLED CSV \n");
-    console.log(csv);
+    // console.log("\n SONG FILLED CSV \n");
+    // console.log(csv);
 
     // Create csv like so:
     /*
     songname, addedBy, username_i ...
     */
+   // 0VJu2YKyBXyCFVE6cZaGpS
 
     // console.log(userScoreRecords);
 
     userScoreRecords.rows.forEach(scoreRecord => {
-      console.log(scoreRecord);
+      // console.log(scoreRecord);
       if (scoreRecord.songid && scoreRecord.userid && scoreRecord.score < maxSongScore && songsDict[scoreRecord.songid].addedBy !== scoreRecord.userid) {
         // Add entry to csv
         const songIndex = songsDict[scoreRecord.songid].index;
-        console.log("Song index: " + songIndex);
+        // console.log("Song index: " + songIndex);
         const userIndex = usersDict[scoreRecord.userid].index;
-        console.log("user index: " + userIndex);
+        // console.log("user index: " + userIndex);
         csv[songIndex][userIndex] = maxSongScore - scoreRecord.score;
       }
     });
 
-    console.log("\n SONGS SCORE FILLED \n");
-    console.log(csv);
+    // console.log("\n SONGS SCORE FILLED \n");
+    // console.log(csv);
 
     // convert csv array to actual csv
 
