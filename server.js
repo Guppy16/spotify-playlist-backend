@@ -29,7 +29,7 @@ const pool = new Pool({
 async function getDates(weeksAgoNum) {
   console.log(weeksAgoNum);
   weeksAgoNum = weeksAgoNum ? weeksAgoNum : 0;
-  console.log(weeksAgoNum);
+  console.log(typeOf(weeksAgoNum));
   try {
     const client = await pool.connect()
     const result = await client.query('SELECT * FROM session_start');
@@ -38,14 +38,13 @@ async function getDates(weeksAgoNum) {
     console.log(dates);
 
     if (weeksAgoNum >= dates.length) {
-      console.log("ERROR: too many weeks ago");
-      return null;
+      throw Error ("ERROR: too many weeks ago \nUsing beginning of db date")
     }
 
     const start = new Date(dates[weeksAgoNum].starttimestamp).toISOString();
     return {
       start: start,
-      end: weeksAgoNum === 0 // Check is weeksAgoNum = 0
+      end: parseInt(weeksAgoNum) === 0 // Check is weeksAgoNum = 0
         ? new Date(new Date().setDate(new Date(start).getDate() + 7)).toISOString() // Default 1 wk after start date
         : new Date(dates[weeksAgoNum - 1].starttimestamp).toISOString(),
     }
