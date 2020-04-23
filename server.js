@@ -45,7 +45,7 @@ async function getDates(weeksAgoNum) {
     const start = new Date(dates[weeksAgoNum].starttimestamp).toISOString();
     return {
       start: start,
-      end: weeksAgoNum // Check is weeksAgoNum = 0
+      end: weeksAgoNum === 0 // Check is weeksAgoNum = 0
         ? new Date(dates[weeksAgoNum - 1].starttimestamp).toISOString()
         : new Date(new Date().setDate(new Date(start).getDate() + 7)).toISOString(), // Default 1 wk after start date
     }
