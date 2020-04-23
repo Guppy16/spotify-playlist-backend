@@ -29,7 +29,7 @@ const pool = new Pool({
 async function getDates(weeksAgoNum) {
   console.log(weeksAgoNum);
   weeksAgoNum = weeksAgoNum ? weeksAgoNum : 0;
-  console.log(typeOf(weeksAgoNum));
+  console.log(weeksAgoNum);
   try {
     const client = await pool.connect()
     const result = await client.query('SELECT * FROM session_start');
