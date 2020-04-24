@@ -221,7 +221,7 @@ app.get('/db/songs', async (req, res) => {
             songs.forEach(async (song) => {
               try {
                 // song.id && // Ensure that it exists before querying db
-                await client.query(`INSERT INTO songs VALUES ('${song.id}','${song.name}','${song.timestamp}','${song.user}','${song.duration}')`);
+                await client.query(`INSERT INTO songs VALUES ('${song.id}','$$${song.name}$$','${song.timestamp}','${song.user}','${song.duration}')`);
               }catch (err){
                 console.error(err);
                 console.log(song);
