@@ -218,7 +218,7 @@ app.get('/db/songs', async (req, res) => {
           try {
             const client = await pool.connect()
             const songIdQuery = await client.query(`SELECT songid FROM songs`);
-            const songIds = songIdQuery.map( songQuery => songQuery.songid);
+            const songIds = songIdQuery.rows.map(songQuery => songQuery.songid);
             // Add songs to database
             songs.forEach(async (song) => {
               try {
