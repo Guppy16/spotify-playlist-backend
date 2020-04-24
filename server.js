@@ -641,9 +641,15 @@ app.get('/callback-google', async (req, res, next) => {
     // console.log(csv);
 
     // convert csv array to actual csv
+    const csvString = csv.reduce( (prevCsv, row) => {
+      const rowStr = row.reduce( (prevItem, item) => {
+        return prevItem + item + ',';
+      }, '');
+      return prevCsv + rowStr + '\n';
+    }, '')
 
 
-    res.json(csv);
+    res.json(csvString);
     // res.sendStatus(200);
 
   } catch (err) {
