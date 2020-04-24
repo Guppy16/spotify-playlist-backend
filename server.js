@@ -202,7 +202,7 @@ app.get('/db/songs', async (req, res) => {
         // console.log(body);
         // May need error handling if error received with getting access token: if body.error...
         const songs = body.tracks.items.reduce((songsList, item) => {
-          console.log(item.added_at);
+          // console.log(item.added_at);
           return item.added_at > startEndDates.start
             ? songsList.concat({
               id: item.track.id,
@@ -219,8 +219,13 @@ app.get('/db/songs', async (req, res) => {
             const client = await pool.connect()
             // Add songs to database
             songs.forEach(async (song) => {
-              song.id && // Ensure that it exists before querying db
+              try {
+                song.id && // Ensure that it exists before querying db
                 client.query(`INSERT INTO songs VALUES ('${song.id}','${song.name}','${song.timestamp}','${song.user}','${song.duration}')`);
+              }catch (err){
+                console.error(err);
+                console.log(song);
+              }
             })
             // Get songs for debugging
             /*
