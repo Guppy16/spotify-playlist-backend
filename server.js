@@ -648,7 +648,7 @@ app.get('/callback-google', async (req, res, next) => {
       return prevCsv + rowStr + '\n';
     }, '')
 
-
+    console.log(csvString);
     res.status(200).send(csvString);
     // res.sendStatus(200);
 
