@@ -649,7 +649,7 @@ app.get('/callback-google', async (req, res, next) => {
     }, '')
 
 
-    res.json(csvString);
+    res.status(200).send(csvString);
     // res.sendStatus(200);
 
   } catch (err) {
