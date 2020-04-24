@@ -38,7 +38,7 @@ async function getDates(weeksAgoNum) {
     console.log(dates);
 
     if (weeksAgoNum >= dates.length) {
-      throw Error ("ERROR: too many weeks ago \nUsing beginning of db date")
+      throw Error("ERROR: too many weeks ago");
     }
 
     const start = new Date(dates[weeksAgoNum].starttimestamp).toISOString();
@@ -202,6 +202,7 @@ app.get('/db/songs', async (req, res) => {
         // console.log(body);
         // May need error handling if error received with getting access token: if body.error...
         const songs = body.tracks.items.reduce((songsList, item) => {
+          console.log(item.added_at);
           return item.added_at > startEndDates.start
             ? songsList.concat({
               id: item.track.id,
@@ -219,7 +220,7 @@ app.get('/db/songs', async (req, res) => {
             // Add songs to database
             songs.forEach(async (song) => {
               song.id && // Ensure that it exists before querying db
-                await client.query(`INSERT INTO songs VALUES ('${song.id}','${song.name}','${song.timestamp}','${song.user}','${song.duration}')`);
+                client.query(`INSERT INTO songs VALUES ('${song.id}','${song.name}','${song.timestamp}','${song.user}','${song.duration}')`);
             })
             // Get songs for debugging
             /*
@@ -228,6 +229,7 @@ app.get('/db/songs', async (req, res) => {
             const results = { 'results': (result) ? result.rows : null };
             res.json(results);
             */
+            client.release();
             res.sendStatus(200);
           } catch (err) {
             console.error(err);
@@ -362,6 +364,7 @@ app.get('/api/playlist', async (req, res, next) => {
   // Get dates
   // const weeksAgo = req.query.weeksAgo;
   const startEndDates = await getDates(0); // Can only get week 0, so that they can't modify prev scores
+  console.log(startEndDates);
 
   // Get playlist meta data using spotify API, but song data from DB
   const accessToken = req.query.access_token;
@@ -565,7 +568,7 @@ app.get('/callback-google', async (req, res, next) => {
 
     // Create an array of songs and score
     let csv = [];
-    let firstRow = ['songs','addedBy',];
+    let firstRow = ['songs', 'addedBy',];
 
     // Map all users to indexes in csv
     // And fill in first row of csv
@@ -609,7 +612,7 @@ app.get('/callback-google', async (req, res, next) => {
     /*
     songname, addedBy, username_i ...
     */
-   // 0VJu2YKyBXyCFVE6cZaGpS
+    // 0VJu2YKyBXyCFVE6cZaGpS
 
     // console.log(userScoreRecords);
 
