@@ -567,7 +567,7 @@ app.get('/test/google', (req, res) => {
   // Get data from /api/result/csv-json
   request.get(
     {
-      url: 'https://shared-playlist-backend.herokuapp.com/api/result/csv-json' + '?weeksAgo=1',
+      url: 'https://shared-playlist-backend.herokuapp.com/api/result/csv-json' + '?weeksAgo=2',
       json: true
     },
     (err, response, body) => {
@@ -575,14 +575,14 @@ app.get('/test/google', (req, res) => {
         console.log("ERROR in getting data from /api/result/csv-json: " + err);
       } else {
         const songResults = body;
-        console.log(songResults);
+        // console.log(songResults);
 
         // ACTUAL PLACE WHERE STUFF IS CALLED
         // Load client secrets from a local file.
         fs.readFile('credentials.json', (err, content) => {
           if (err) return console.log('Error loading client secret file:', err);
           // Authorize a client with credentials, then call the Google Sheets API.
-          authorize(JSON.parse(content), addResults);
+          authorize(JSON.parse(content), addResults, songResults);
         });
       }
     });
@@ -600,8 +600,9 @@ app.get('/test/google', (req, res) => {
    * given callback function.
    * @param {Object} credentials The authorization client credentials.
    * @param {function} callback The callback to call with the authorized client.
+   * @param {any} props The stuff to be passed into callback
    */
-  function authorize(credentials, callback) {
+  function authorize(credentials, callback, props) {
     const { client_secret, client_id, redirect_uris } = credentials.installed;
     const oAuth2Client = new google.auth.OAuth2(
       client_id, client_secret, redirect_uris[0]);
@@ -610,7 +611,7 @@ app.get('/test/google', (req, res) => {
     fs.readFile(TOKEN_PATH, (err, token) => {
       if (err) return getNewToken(oAuth2Client, callback);
       oAuth2Client.setCredentials(JSON.parse(token));
-      callback(oAuth2Client);
+      callback(oAuth2Client, props);
     });
   }
 
@@ -652,8 +653,9 @@ app.get('/test/google', (req, res) => {
    * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
    */
 
-  function addResults(auth) {
+  function addResults(auth, values) {
     const sheets = google.sheets({ version: 'v4', auth });
+    const today = new Date().toDateString();
 
     // Add new sheet  with today's date
 
@@ -664,77 +666,94 @@ app.get('/test/google', (req, res) => {
           {
             "addSheet": {
               "properties": {
-                "title": new Date().toDateString(),
-                "gridProperties": {
-                  "rowCount": 20,
-                  "columnCount": 12
-                },
-                "tabColor": {
-                  "red": 1.0,
-                  "green": 0.3,
-                  "blue": 0.4
-                }
+                "title": today,
+                // "gridProperties": {
+                //   "rowCount": 20,
+                //   "columnCount": 12
+                // },
+                // "tabColor": {
+                //   "red": 1.0,
+                //   "green": 0.3,
+                //   "blue": 0.4
+                // }
               }
             }
           }
         ]
       },
-    }), (err, response, body) => {
+    }, (err, response) => {
+      console.log("Done creating new sheet")
+
       if (err) {
         console.log("ERROR performing batch update");
         console.log(err);
-        console.log(body);
       } else {
-        console.log(body);
-        const findReplaceResponse = response.replies[1].findReplace;
-        console.log(`${findReplaceResponse.occurrencesChanged} replacements made.`);
-        sheets.spreadsheets.values.get({
+        console.log("Performing write");
+        // console.log(response);
+        // const findReplaceResponse = response.replies[1].findReplace;
+        // console.log(`${findReplaceResponse.occurrencesChanged} replacements made.`);
+
+        const resource = {
+          values,
+        };
+        sheets.spreadsheets.values.append({
           spreadsheetId: '1ISAvoG3tVe0eXPCpbys4qRGgDHG6A-tV6f6dDx_d0tU',
-          range: 'August!A2:E',
-        }, (err, res) => {
-          if (err) return console.log('The API returned an error: ' + err);
-          const rows = res.data.values;
-          if (rows.length) {
-            console.log(rows);
-            // Print columns A and E, which correspond to indices 0 and 4.
-            rows.map((row) => {
-              console.log(`${row[0]}, ${row[4]}`);
-            });
+          range: today,
+          valueInputOption: "USER_ENTERED",
+          resource,
+        }, (err, result) => {
+          if (err) {
+            // Handle error.
+            console.log(err);
           } else {
-            console.log('No data found.');
+            // console.log(`${result.updates.updatedCells} cells appended.`);
+            console.log("Done adding cells");
           }
         });
-      }
-    }
-  }
 
-
-  /**
-   * Prints the names and majors of students in a sample spreadsheet:
-   * @see https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
-   * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
-   */
-  function listMajors(auth) {
-    const sheets = google.sheets({ version: 'v4', auth });
-    sheets.spreadsheets.values.get({
-      spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
-      range: 'Class Data!A2:E',
-    }, (err, res) => {
-      if (err) return console.log('The API returned an error: ' + err);
-      const rows = res.data.values;
-      if (rows.length) {
-        console.log('Name, Major:');
-        // Print columns A and E, which correspond to indices 0 and 4.
-        rows.map((row) => {
-          console.log(`${row[0]}, ${row[4]}`);
-        });
-      } else {
-        console.log('No data found.');
+        // sheets.spreadsheets.values.get({
+        //   spreadsheetId: '1ISAvoG3tVe0eXPCpbys4qRGgDHG6A-tV6f6dDx_d0tU',
+        //   range: 'August!A2:E',
+        // }, (err, res) => {
+        //   if (err) return console.log('The API returned an error: ' + err);
+        //   const rows = res.data.values;
+        //   if (rows.length) {
+        //     console.log(rows);
+        //   } else {
+        //     console.log('No data found.');
+        //   }
+        // });
       }
     });
-  }
 
-  res.sendStatus(200);
+
+    /**
+     * Prints the names and majors of students in a sample spreadsheet:
+     * @see https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
+     * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
+     */
+    function listMajors(auth) {
+      const sheets = google.sheets({ version: 'v4', auth });
+      sheets.spreadsheets.values.get({
+        spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+        range: 'Class Data!A2:E',
+      }, (err, res) => {
+        if (err) return console.log('The API returned an error: ' + err);
+        const rows = res.data.values;
+        if (rows.length) {
+          console.log('Name, Major:');
+          // Print columns A and E, which correspond to indices 0 and 4.
+          rows.map((row) => {
+            console.log(`${row[0]}, ${row[4]}`);
+          });
+        } else {
+          console.log('No data found.');
+        }
+      });
+    }
+
+    res.sendStatus(200);
+  }
 })
 
 
