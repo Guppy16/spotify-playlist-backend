@@ -567,7 +567,7 @@ app.get('/test/google', (req, res) => {
   // Get data from /api/result/csv-json
   request.get(
     {
-      url: 'https://shared-playlist-backend.herokuapp.com/api/result/csv-json',
+      url: 'https://shared-playlist-backend.herokuapp.com/api/result/csv-json' + '?weeksAgo=1',
       json: true
     },
     (err, response, body) => {
@@ -656,37 +656,34 @@ app.get('/test/google', (req, res) => {
     const sheets = google.sheets({ version: 'v4', auth });
 
     // Add new sheet  with today's date
-    let requests = [];
-    requests.push({
-      "requests": [
-        {
-          "addSheet": {
-            "properties": {
-              "title": new Date().toDateString(),
-              "gridProperties": {
-                "rowCount": 20,
-                "columnCount": 12
-              },
-              "tabColor": {
-                "red": 1.0,
-                "green": 0.3,
-                "blue": 0.4
-              }
-            }
-          }
-        }
-      ]
-    })
-
-    // Add additional requests (operations) ...
-    const batchUpdateRequest = { requests };
 
     sheets.spreadsheets.batchUpdate({
       spreadsheetId: '1ISAvoG3tVe0eXPCpbys4qRGgDHG6A-tV6f6dDx_d0tU',
-      resource: batchUpdateRequest,
+      resource: {
+        "requests": [
+          {
+            "addSheet": {
+              "properties": {
+                "title": new Date().toDateString(),
+                "gridProperties": {
+                  "rowCount": 20,
+                  "columnCount": 12
+                },
+                "tabColor": {
+                  "red": 1.0,
+                  "green": 0.3,
+                  "blue": 0.4
+                }
+              }
+            }
+          }
+        ]
+      },
     }), (err, response, body) => {
       if (err) {
+        console.log("ERROR performing batch update");
         console.log(err);
+        console.log(body);
       } else {
         console.log(body);
         const findReplaceResponse = response.replies[1].findReplace;
@@ -834,7 +831,8 @@ app.get('/api/result/csv-json', async (req, res, next) => {
 
     console.log(csvString);
     // res.status(200).send(csvString);
-    res.json(csvString);
+    // res.json(csvString);
+    res.json(csv);
 
   } catch (err) {
     console.error(err);
