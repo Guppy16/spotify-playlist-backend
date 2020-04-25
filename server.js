@@ -3,6 +3,9 @@ const request = require('request');
 const querystring = require('querystring');
 const bodyParser = require('body-parser');
 require('dotenv').config();
+const fs = require('fs');
+const readline = require('readline');
+const { google } = require('googleapis');
 
 const testData = {
   "songScores": [{ "songid": "2i63MeQVdPuLvDH4EdaqXO", "songname": "Undercover Martyn", "addedbyuserid": "danishmalik01", "username": "danishmalik01", "score": 7, "userScore": "-" }, { "songid": "0LtOwyZoSNZKJWHqjzADpW", "songname": "Feels Like We Only Go Backwards", "addedbyuserid": "danishmalik01", "username": "danishmalik01", "score": 5, "userScore": "-" }, { "songid": "6TWei3RfHaDYEC8EgVvTST", "songname": "life? ... lol", "addedbyuserid": "vishukethees", "username": "vishukethees", "score": 4, "userScore": "-" }, { "songid": "0VJu2YKyBXyCFVE6cZaGpS", "songname": "Flex (feat. JB Scofield)", "addedbyuserid": "vishukethees", "username": "vishukethees", "score": 3, "userScore": "-" }, { "songid": "0uxSUdBrJy9Un0EYoBowng", "songname": "20 Min", "addedbyuserid": "vishukethees", "username": "vishukethees", "score": 2, "userScore": "-" }, { "songid": "01ibNvCrbTdwOcqIcroORv", "songname": "2 The Face", "addedbyuserid": "vishukethees", "username": "vishukethees", "score": 1, "userScore": "-" }, { "songid": "6XkuklKiHYVTlVvWlTgQYP", "songname": "Erase Me - Main", "addedbyuserid": "vishukethees", "username": "vishukethees", "score": 0, "userScore": "-" }, { "songid": "3AHqaOkEFKZ6zEHdiplIv7", "songname": "Tokyo Drifting (with Denzel Curry)", "addedbyuserid": "danishmalik01", "username": "danishmalik01", "score": 10, "userScore": "-" }, { "songid": "2ej1A2Ze6P2EOW7KfIosZR", "songname": "Feather (feat. Cise Starr & Akin from CYNE)", "addedbyuserid": "danishmalik01", "username": "danishmalik01", "score": 0, "userScore": "-" }, { "songid": "6XyxCBp6x3jvtxXvMN5sAA", "songname": "1539 N. Calvert", "addedbyuserid": "danishmalik01", "username": "danishmalik01", "score": 0, "userScore": "-" }, { "songid": "2jfCy43LsFbCQoB6HyetlY", "songname": "Let Me Love You", "addedbyuserid": "ghifax", "username": "ghifax", "score": 0, "userScore": "-" }, { "songid": "1ZLrDPgR7mvuTco3rQK8Pk", "songname": "Way Back Home (feat. Conor Maynard) - Sam Feldt Edit", "addedbyuserid": "ghifax", "username": "ghifax", "score": 6, "userScore": "-" }, { "songid": "0qc4QlcCxVTGyShurEv1UU", "songname": "Post Malone (feat. RANI)", "addedbyuserid": "ghifax", "username": "ghifax", "score": 0, "userScore": "-" }, { "songid": "7FjZU7XFs7P9jHI9Z0yRhK", "songname": "So Close", "addedbyuserid": "ghifax", "username": "ghifax", "score": 0, "userScore": "-" }, { "songid": "1fsarPmsdYzQuEtgeqLusc", "songname": "Fading Away", "addedbyuserid": "tharshank85", "username": "tharshank85", "score": 0, "userScore": "-" }, { "songid": "5mJeFqtQiPvYzbeFIBiJ9S", "songname": "asteria", "addedbyuserid": "tharshank85", "username": "tharshank85", "score": 0, "userScore": "-" }, { "songid": "6JzgPzivpGAf1Nu5nKHahR", "songname": "Eyes Shut", "addedbyuserid": "tharshank85", "username": "tharshank85", "score": 0, "userScore": "-" }, { "songid": "3Kh5dwQbOfGgCKuU56wdj6", "songname": "Plant Sugar", "addedbyuserid": "tharshank85", "username": "tharshank85", "score": 0, "userScore": "-" }, { "songid": "4QOfUrTWpIlmziECELlCYN", "songname": "Dancing Under Red Skies", "addedbyuserid": "tharshank85", "username": "tharshank85", "score": 0, "userScore": "-" }, { "songid": "3pCDoblIpHzhMowUm9Icfy", "songname": "People", "addedbyuserid": "ghifax", "username": "ghifax", "score": 9, "userScore": "-" }, { "songid": "1UvXZz4bFzreMkZxNgJPDL", "songname": "Satisfied", "addedbyuserid": "johnkxr", "username": "johnkxr", "score": 0, "userScore": "-" }, { "songid": "4PvbbMYL4fkToni5BLaYRb", "songname": "Softly", "addedbyuserid": "johnkxr", "username": "johnkxr", "score": 0, "userScore": "-" }, { "songid": "5lFDtgWsjRJu8fPOAyJIAK", "songname": "Back To Back", "addedbyuserid": "johnkxr", "username": "johnkxr", "score": 0, "userScore": "-" }, { "songid": "7eFgcHYLppNnEQURFzalIO", "songname": "Car Keys", "addedbyuserid": "zvi3kfe6q8o0mzwvj0v9bgjig", "username": "Kieran.Tam", "score": 0, "userScore": "-" }, { "songid": "2AoCWJKiGjLGB5NBOqkv78", "songname": "Somebody Like You", "addedbyuserid": "zvi3kfe6q8o0mzwvj0v9bgjig", "username": "Kieran.Tam", "score": 0, "userScore": "-" }, { "songid": "5SN8Y8Q430cJL4kqboNYlf", "songname": "This City - Frank Walker Remix", "addedbyuserid": "zvi3kfe6q8o0mzwvj0v9bgjig", "username": "Kieran.Tam", "score": 8, "userScore": "-" }, { "songid": "2hnfwBQXNCQSStIOl39CFV", "songname": "Verliezen Met Jullie", "addedbyuserid": "zvi3kfe6q8o0mzwvj0v9bgjig", "username": "Kieran.Tam", "score": 0, "userScore": "-" }, { "songid": "1yIsDdY8ETskEbEjCtafaa", "songname": "all is not lost", "addedbyuserid": "zvi3kfe6q8o0mzwvj0v9bgjig", "username": "Kieran.Tam", "score": 0, "userScore": "-" }, { "songid": "0HohtPHt6Fl6mVtir1z4wr", "songname": "Long Ago", "addedbyuserid": "21l7ckkzm3n724zgz6lbosx4a", "username": "Akash Gupta", "score": 0, "userScore": "-" }, { "songid": "0cPt48GfZPQDi9XDawLWVt", "songname": "Away", "addedbyuserid": "21l7ckkzm3n724zgz6lbosx4a", "username": "Akash Gupta", "score": 0, "userScore": "-" }], "userScores": [{ "userspotifyid": "21l7ckkzm3n724zgz6lbosx4a", "username": "Akash Gupta", "confirmedvote": false, "score": 0 }, { "userspotifyid": "ghifax", "username": "ghifax", "confirmedvote": false, "score": 15 }, { "userspotifyid": "danishmalik01", "username": "danishmalik01", "confirmedvote": false, "score": 22 }, { "userspotifyid": "tharshank85", "username": "tharshank85", "confirmedvote": false, "score": 0 }, { "userspotifyid": "vishukethees", "username": "vishukethees", "confirmedvote": false, "score": 10 }, { "userspotifyid": "johnkxr", "username": "johnkxr", "confirmedvote": false, "score": 0 }, { "userspotifyid": "zvi3kfe6q8o0mzwvj0v9bgjig", "username": "Kieran.Tam", "confirmedvote": false, "score": 8 }]
@@ -558,7 +561,188 @@ app.get('/api/result', async (req, res, next) => {
   }
 })
 
-app.get('/callback-google', async (req, res, next) => {
+app.get('/test/google', (req, res) => {
+  console.log("Outputting to spreadsheet")
+
+  // Get data from /api/result/csv-json
+  request.get(
+    {
+      url: 'https://shared-playlist-backend.herokuapp.com/api/result/csv-json',
+      json: true
+    },
+    (err, response, body) => {
+      if (err) {
+        console.log("ERROR in getting data from /api/result/csv-json: " + err);
+      } else {
+        const songResults = body;
+        console.log(songResults);
+
+        // ACTUAL PLACE WHERE STUFF IS CALLED
+        // Load client secrets from a local file.
+        fs.readFile('credentials.json', (err, content) => {
+          if (err) return console.log('Error loading client secret file:', err);
+          // Authorize a client with credentials, then call the Google Sheets API.
+          authorize(JSON.parse(content), addResults);
+        });
+      }
+    });
+
+
+  // If modifying these scopes, delete token.json.
+  const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
+  // The file token.json stores the user's access and refresh tokens, and is
+  // created automatically when the authorization flow completes for the first
+  // time.
+  const TOKEN_PATH = 'token.json';
+
+  /**
+   * Create an OAuth2 client with the given credentials, and then execute the
+   * given callback function.
+   * @param {Object} credentials The authorization client credentials.
+   * @param {function} callback The callback to call with the authorized client.
+   */
+  function authorize(credentials, callback) {
+    const { client_secret, client_id, redirect_uris } = credentials.installed;
+    const oAuth2Client = new google.auth.OAuth2(
+      client_id, client_secret, redirect_uris[0]);
+
+    // Check if we have previously stored a token.
+    fs.readFile(TOKEN_PATH, (err, token) => {
+      if (err) return getNewToken(oAuth2Client, callback);
+      oAuth2Client.setCredentials(JSON.parse(token));
+      callback(oAuth2Client);
+    });
+  }
+
+  /**
+   * Get and store new token after prompting for user authorization, and then
+   * execute the given callback with the authorized OAuth2 client.
+   * @param {google.auth.OAuth2} oAuth2Client The OAuth2 client to get token for.
+   * @param {getEventsCallback} callback The callback for the authorized client.
+   */
+  function getNewToken(oAuth2Client, callback) {
+    const authUrl = oAuth2Client.generateAuthUrl({
+      access_type: 'offline',
+      scope: SCOPES,
+    });
+    console.log('Authorize this app by visiting this url:', authUrl);
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    rl.question('Enter the code from that page here: ', (code) => {
+      rl.close();
+      oAuth2Client.getToken(code, (err, token) => {
+        if (err) return console.error('Error while trying to retrieve access token', err);
+        oAuth2Client.setCredentials(token);
+        // Store the token to disk for later program executions
+        fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
+          if (err) return console.error(err);
+          console.log('Token stored to', TOKEN_PATH);
+        });
+        callback(oAuth2Client);
+      });
+    });
+  }
+
+  // Callback function to add data to sheet
+  /**
+   * Prints the names and majors of students in a sample spreadsheet:
+   * @see https://docs.google.com/spreadsheets/d/1ISAvoG3tVe0eXPCpbys4qRGgDHG6A-tV6f6dDx_d0tU/edit?usp=sharing
+   * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
+   */
+
+  function addResults(auth) {
+    const sheets = google.sheets({ version: 'v4', auth });
+
+    // Add new sheet  with today's date
+    let requests = [];
+    requests.push({
+      "requests": [
+        {
+          "addSheet": {
+            "properties": {
+              "title": new Date().toDateString(),
+              "gridProperties": {
+                "rowCount": 20,
+                "columnCount": 12
+              },
+              "tabColor": {
+                "red": 1.0,
+                "green": 0.3,
+                "blue": 0.4
+              }
+            }
+          }
+        }
+      ]
+    })
+
+    // Add additional requests (operations) ...
+    const batchUpdateRequest = { requests };
+
+    sheets.spreadsheets.batchUpdate({
+      spreadsheetId: '1ISAvoG3tVe0eXPCpbys4qRGgDHG6A-tV6f6dDx_d0tU',
+      resource: batchUpdateRequest,
+    }), (err, response, body) => {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log(body);
+        const findReplaceResponse = response.replies[1].findReplace;
+        console.log(`${findReplaceResponse.occurrencesChanged} replacements made.`);
+        sheets.spreadsheets.values.get({
+          spreadsheetId: '1ISAvoG3tVe0eXPCpbys4qRGgDHG6A-tV6f6dDx_d0tU',
+          range: 'August!A2:E',
+        }, (err, res) => {
+          if (err) return console.log('The API returned an error: ' + err);
+          const rows = res.data.values;
+          if (rows.length) {
+            console.log(rows);
+            // Print columns A and E, which correspond to indices 0 and 4.
+            rows.map((row) => {
+              console.log(`${row[0]}, ${row[4]}`);
+            });
+          } else {
+            console.log('No data found.');
+          }
+        });
+      }
+    }
+  }
+
+
+  /**
+   * Prints the names and majors of students in a sample spreadsheet:
+   * @see https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
+   * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
+   */
+  function listMajors(auth) {
+    const sheets = google.sheets({ version: 'v4', auth });
+    sheets.spreadsheets.values.get({
+      spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+      range: 'Class Data!A2:E',
+    }, (err, res) => {
+      if (err) return console.log('The API returned an error: ' + err);
+      const rows = res.data.values;
+      if (rows.length) {
+        console.log('Name, Major:');
+        // Print columns A and E, which correspond to indices 0 and 4.
+        rows.map((row) => {
+          console.log(`${row[0]}, ${row[4]}`);
+        });
+      } else {
+        console.log('No data found.');
+      }
+    });
+  }
+
+  res.sendStatus(200);
+})
+
+
+
+app.get('/api/result/csv-json', async (req, res, next) => {
   console.log("\nGETTING collated results\n");
 
   // Get dates
@@ -641,16 +825,16 @@ app.get('/callback-google', async (req, res, next) => {
     // console.log(csv);
 
     // convert csv array to actual csv
-    const csvString = csv.reduce( (prevCsv, row) => {
-      const rowStr = row.reduce( (prevItem, item) => {
+    const csvString = csv.reduce((prevCsv, row) => {
+      const rowStr = row.reduce((prevItem, item) => {
         return prevItem + item + ',';
       }, '');
       return prevCsv + rowStr + '\n';
     }, '')
 
     console.log(csvString);
-    res.status(200).send(csvString);
-    // res.sendStatus(200);
+    // res.status(200).send(csvString);
+    res.json(csvString);
 
   } catch (err) {
     console.error(err);

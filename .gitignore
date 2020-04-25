@@ -58,3 +58,4 @@ typings/
 .env
 
 credentials.json
+token.json
